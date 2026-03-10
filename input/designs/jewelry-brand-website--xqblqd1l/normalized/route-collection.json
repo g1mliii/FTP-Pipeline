@@ -1,0 +1,76 @@
+{
+  "handle": "collection-editorial",
+  "path": "/collections/all",
+  "eyebrow": "Shop",
+  "heading": "Signature Collection",
+  "intro": "The house edit of layered chains, sculptural rings, and subscription-box favorites. Built to feel editorial, giftable, and wearable every day.",
+  "filters": ["Material", "Stone", "Engravable", "All Filters"],
+  "products": [
+    {
+      "title": "Vue Chain Necklace",
+      "price": "$48",
+      "tag": "New",
+      "linkUrl": "/products/vue-chain-necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1736436789706-005f2218a96d?q=80&w=1080",
+      "imageAlt": "Vue Chain Necklace"
+    },
+    {
+      "title": "Organic Dome Ring Set",
+      "price": "$188",
+      "tag": "",
+      "linkUrl": "/products/vue-chain-necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1629704702497-ddbe07995372?q=80&w=1080",
+      "imageAlt": "Organic Dome ring set"
+    },
+    {
+      "title": "Dome Figure Ring",
+      "price": "$118",
+      "tag": "",
+      "linkUrl": "/products/vue-chain-necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=1080",
+      "imageAlt": "Dome figure ring"
+    },
+    {
+      "title": "The Dusk Box",
+      "price": "$88",
+      "tag": "Most Gifted",
+      "linkUrl": "/products/dusk-box",
+      "imageUrl": "https://images.unsplash.com/photo-1745541472989-e1291941dc36?q=80&w=1080",
+      "imageAlt": "Dusk box product feature"
+    },
+    {
+      "title": "Daily Stacker Ring",
+      "price": "$88",
+      "tag": "",
+      "linkUrl": "/products/vue-chain-necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1730210715526-4653d5571bc8?q=80&w=1080",
+      "imageAlt": "Daily stacker ring"
+    },
+    {
+      "title": "Beaded Stacker Ring",
+      "price": "$78",
+      "tag": "",
+      "linkUrl": "/products/vue-chain-necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1614999612412-3b1dbcd68e40?q=80&w=1080",
+      "imageAlt": "Beaded stacker ring"
+    },
+    {
+      "title": "Dual Stack Ring",
+      "price": "$158",
+      "tag": "Only a Few Left",
+      "linkUrl": "/products/vue-chain-necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1535632787350-4e68ef0ac584?q=80&w=1080",
+      "imageAlt": "Dual stack ring"
+    },
+    {
+      "title": "Croissant Dome Ring",
+      "price": "$128",
+      "tag": "Best Seller",
+      "linkUrl": "/products/vue-chain-necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=1080",
+      "imageAlt": "Croissant dome ring"
+    }
+  ],
+  "editorialImageUrl": "https://images.unsplash.com/photo-1643320477860-e903e4af260b?q=80&w=1080",
+  "editorialImageAlt": "Jewelry lifestyle image"
+}

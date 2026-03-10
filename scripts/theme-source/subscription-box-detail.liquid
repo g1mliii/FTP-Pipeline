@@ -1,0 +1,150 @@
+<section class="subscription-box" id="shopify-section-{{ section.id }}">
+  <div class="subscription-box__hero">
+    <div class="subscription-box__gallery">
+      {% assign gallery_blocks = section.blocks | where: 'type', 'gallery' %}
+      {% for block in gallery_blocks %}
+        {% capture asset_name %}subscription-box-detail-gallery-{{ forloop.index }}.jpg{% endcapture %}
+        <img class="subscription-box__gallery-image" src="{{ asset_name | asset_url }}" alt="{{ block.settings.image_alt | escape }}" width="1200" height="1500" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+      {% endfor %}
+    </div>
+    <div class="subscription-box__summary">
+      <p class="commerce-kicker">{{ section.settings.eyebrow | escape }}</p>
+      <h1 class="commerce-heading">{{ product.title | default: section.settings.fallback_title | escape }}</h1>
+      <p class="editorial-product__subtitle">{{ section.settings.subtitle | escape }}</p>
+      <p class="subscription-box__price">{{ section.settings.price_label | escape }}</p>
+      <p class="subscription-box__value">{{ section.settings.value_label | escape }}</p>
+      <p class="subscription-box__meta">{{ section.settings.meta_label | escape }}</p>
+      <a class="button-outline button-outline--accent" href="/pages/membership">Subscribe to Dusk</a>
+    </div>
+  </div>
+  <div class="subscription-box__pieces">
+    {% assign piece_blocks = section.blocks | where: 'type', 'piece' %}
+    {% for block in piece_blocks %}
+      {% capture asset_name %}subscription-box-detail-piece-{{ forloop.index }}.jpg{% endcapture %}
+      <article class="subscription-box__piece" {{ block.shopify_attributes }}>
+        <img src="{{ asset_name | asset_url }}" alt="{{ block.settings.image_alt | escape }}" width="800" height="800" loading="lazy">
+        <span class="subscription-box__piece-type">{{ block.settings.type_label | escape }}</span>
+        <h3>{{ block.settings.title | escape }}</h3>
+        <p>{{ block.settings.material | escape }} · {{ block.settings.retail | escape }}</p>
+      </article>
+    {% endfor %}
+  </div>
+  <div class="subscription-box__story">
+    <img class="subscription-box__story-image" src="{{ 'subscription-box-detail-story.jpg' | asset_url }}" alt="{{ section.settings.story_image_alt | escape }}" width="1400" height="1600" loading="lazy">
+    <div class="subscription-box__story-copy">
+      <p class="section-eyebrow">{{ section.settings.story_eyebrow | escape }}</p>
+      <h2 class="section-heading section-heading--light">{{ section.settings.story_heading | escape }}</h2>
+      <p>{{ section.settings.story_body_one | escape }}</p>
+      <p>{{ section.settings.story_body_two | escape }}</p>
+    </div>
+  </div>
+  <div class="subscription-box__experience">
+    <div class="subscription-box__experience-copy">
+      <p class="section-eyebrow">{{ section.settings.experience_eyebrow | escape }}</p>
+      <h2 class="section-heading">{{ section.settings.experience_heading | escape }}</h2>
+      {% assign experience_blocks = section.blocks | where: 'type', 'experience_step' %}
+      {% for block in experience_blocks %}
+        <article class="subscription-box__experience-item" {{ block.shopify_attributes }}>
+          <h3>{{ block.settings.title | escape }}</h3>
+          <p>{{ block.settings.body | escape }}</p>
+        </article>
+      {% endfor %}
+    </div>
+    <img class="subscription-box__experience-image" src="{{ 'subscription-box-detail-experience.jpg' | asset_url }}" alt="{{ section.settings.experience_image_alt | escape }}" width="1200" height="1500" loading="lazy">
+  </div>
+  <div class="subscription-box__past">
+    {% assign past_blocks = section.blocks | where: 'type', 'past_box' %}
+    {% for block in past_blocks %}
+      {% capture asset_name %}subscription-box-detail-past-{{ forloop.index }}.jpg{% endcapture %}
+      <article class="subscription-box__past-card" {{ block.shopify_attributes }}>
+        <img src="{{ asset_name | asset_url }}" alt="{{ block.settings.image_alt | escape }}" width="900" height="900" loading="lazy">
+        <div>
+          <p>{{ block.settings.month | escape }}</p>
+          <h3>{{ block.settings.theme | escape }}</h3>
+          <span>{{ block.settings.value | escape }}</span>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+  <div class="subscription-box__reviews">
+    {% assign review_blocks = section.blocks | where: 'type', 'review' %}
+    {% for block in review_blocks %}
+      <article class="editorial-product__review" {{ block.shopify_attributes }}>
+        <p class="editorial-product__review-meta">{{ block.settings.name | escape }} · {{ block.settings.date | escape }} · {{ block.settings.rating | escape }}</p>
+        <p>{{ block.settings.body | escape }}</p>
+      </article>
+    {% endfor %}
+  </div>
+  <div class="subscription-box__tiers">
+    {% assign tier_blocks = section.blocks | where: 'type', 'tier' %}
+    {% for block in tier_blocks %}
+      <article class="membership-landing__tier" {{ block.shopify_attributes }}>
+        <p class="membership-landing__tier-name">{{ block.settings.name | escape }}</p>
+        <h3 class="membership-landing__tier-price">{{ block.settings.price | escape }}</h3>
+        <p class="membership-landing__tier-meta">{{ block.settings.pieces | escape }} · {{ block.settings.value | escape }}</p>
+        <p class="membership-landing__tier-summary">{{ block.settings.state | escape }}</p>
+      </article>
+    {% endfor %}
+  </div>
+  <div class="subscription-box__faq">
+    {% assign faq_blocks = section.blocks | where: 'type', 'faq' %}
+    {% for block in faq_blocks %}
+      <details class="membership-landing__faq-item" {{ block.shopify_attributes }}>
+        <summary>{{ block.settings.question | escape }}</summary>
+        <p>{{ block.settings.answer | escape }}</p>
+      </details>
+    {% endfor %}
+  </div>
+  <div class="subscription-box__closing">
+    <img class="subscription-box__closing-image" src="{{ 'subscription-box-detail-cta.jpg' | asset_url }}" alt="{{ section.settings.final_image_alt | escape }}" width="1400" height="1000" loading="lazy">
+    <div class="subscription-box__closing-copy">
+      <p class="section-eyebrow">{{ section.settings.final_eyebrow | escape }}</p>
+      <h2 class="section-heading section-heading--light">{{ section.settings.final_heading | escape }}</h2>
+      <p>{{ section.settings.final_body | escape }}</p>
+      <div class="editorial-product__actions">
+        <a class="button-outline button-outline--accent" href="{{ section.settings.final_primary_url }}">{{ section.settings.final_primary_label | escape }}</a>
+        <a class="membership-landing__secondary-link" href="{{ section.settings.final_secondary_url }}">{{ section.settings.final_secondary_label | escape }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Subscription box detail",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow" },
+    { "type": "text", "id": "fallback_title", "label": "Fallback title" },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle" },
+    { "type": "text", "id": "price_label", "label": "Price label" },
+    { "type": "text", "id": "value_label", "label": "Value label" },
+    { "type": "text", "id": "meta_label", "label": "Meta label" },
+    { "type": "text", "id": "story_eyebrow", "label": "Story eyebrow" },
+    { "type": "textarea", "id": "story_heading", "label": "Story heading" },
+    { "type": "textarea", "id": "story_body_one", "label": "Story body one" },
+    { "type": "textarea", "id": "story_body_two", "label": "Story body two" },
+    { "type": "text", "id": "story_image_alt", "label": "Story image alt" },
+    { "type": "text", "id": "experience_eyebrow", "label": "Experience eyebrow" },
+    { "type": "textarea", "id": "experience_heading", "label": "Experience heading" },
+    { "type": "text", "id": "experience_image_alt", "label": "Experience image alt" },
+    { "type": "text", "id": "final_eyebrow", "label": "Final CTA eyebrow" },
+    { "type": "textarea", "id": "final_heading", "label": "Final CTA heading" },
+    { "type": "textarea", "id": "final_body", "label": "Final CTA body" },
+    { "type": "text", "id": "final_primary_label", "label": "Final primary label" },
+    { "type": "url", "id": "final_primary_url", "label": "Final primary URL" },
+    { "type": "text", "id": "final_secondary_label", "label": "Final secondary label" },
+    { "type": "url", "id": "final_secondary_url", "label": "Final secondary URL" },
+    { "type": "text", "id": "final_image_alt", "label": "Final image alt" }
+  ],
+  "blocks": [
+    { "type": "gallery", "name": "Gallery image", "settings": [{ "type": "text", "id": "image_alt", "label": "Image alt" }] },
+    { "type": "piece", "name": "Included piece", "settings": [{ "type": "text", "id": "title", "label": "Title" }, { "type": "text", "id": "material", "label": "Material" }, { "type": "text", "id": "retail", "label": "Retail" }, { "type": "text", "id": "type_label", "label": "Type label" }, { "type": "text", "id": "image_alt", "label": "Image alt" }] },
+    { "type": "experience_step", "name": "Experience step", "settings": [{ "type": "text", "id": "title", "label": "Title" }, { "type": "textarea", "id": "body", "label": "Body" }] },
+    { "type": "past_box", "name": "Past box", "settings": [{ "type": "text", "id": "month", "label": "Month" }, { "type": "text", "id": "theme", "label": "Theme" }, { "type": "text", "id": "value", "label": "Value label" }, { "type": "text", "id": "image_alt", "label": "Image alt" }] },
+    { "type": "review", "name": "Review", "settings": [{ "type": "text", "id": "name", "label": "Name" }, { "type": "text", "id": "date", "label": "Date" }, { "type": "text", "id": "rating", "label": "Rating" }, { "type": "textarea", "id": "body", "label": "Body" }] },
+    { "type": "tier", "name": "Tier", "settings": [{ "type": "text", "id": "name", "label": "Name" }, { "type": "text", "id": "price", "label": "Price" }, { "type": "text", "id": "pieces", "label": "Pieces" }, { "type": "text", "id": "value", "label": "Value" }, { "type": "text", "id": "state", "label": "State" }] },
+    { "type": "faq", "name": "FAQ", "settings": [{ "type": "text", "id": "question", "label": "Question" }, { "type": "textarea", "id": "answer", "label": "Answer" }] }
+  ],
+  "presets": [{ "name": "Subscription box detail" }]
+}
+{% endschema %}

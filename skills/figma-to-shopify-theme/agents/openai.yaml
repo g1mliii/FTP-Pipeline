@@ -1,0 +1,4 @@
+interface:
+  display_name: "Figma to Shopify"
+  short_description: "Generate and verify editable Shopify theme routes, templates, and sections."
+  default_prompt: "Use $figma-to-shopify-theme to turn a normalized Figma site spec into Shopify Liquid, cover homepage and routed destination templates, validate routes locally, and push into a stable Shopify preview theme when store access is available."

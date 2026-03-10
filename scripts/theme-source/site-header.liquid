@@ -1,0 +1,26 @@
+<section class="site-header-shell" id="shopify-section-{{ section.id }}">
+  <div class="site-header-shell__announcement">{{ section.settings.announcement_text | escape }}</div>
+  <div class="site-header-shell__nav">
+    <div class="site-header-shell__menu site-header-shell__menu--left">
+      <a class="site-header-shell__link" href="{{ routes.all_products_collection_url }}">Shop</a>
+      <a class="site-header-shell__link" href="{{ routes.all_products_collection_url }}">New arrivals</a>
+      <a class="site-header-shell__link" href="/pages/membership">Boxes</a>
+    </div>
+    <a class="site-header-shell__brand" href="{{ routes.root_url }}">{{ section.settings.brand | escape }}</a>
+    <div class="site-header-shell__menu site-header-shell__menu--right">
+      <a class="site-header-shell__link" href="/products/vue-chain-necklace">Best sellers</a>
+      <a class="site-header-shell__link" href="/products/dusk-box">Gifted edit</a>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Site header",
+  "settings": [
+    { "type": "text", "id": "announcement_text", "label": "Announcement text" },
+    { "type": "text", "id": "brand", "label": "Brand label" }
+  ],
+  "presets": [{ "name": "Site header" }]
+}
+{% endschema %}

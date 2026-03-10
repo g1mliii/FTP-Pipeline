@@ -1,0 +1,62 @@
+<section class="site-footer-shell" id="shopify-section-{{ section.id }}">
+  <div class="site-footer-shell__inner">
+    <div class="site-footer-shell__brand">
+      <a class="site-footer-shell__brand-link" href="{{ routes.root_url }}">{{ section.settings.brand | escape }}</a>
+      <p class="site-footer-shell__body">{{ section.settings.body | escape }}</p>
+    </div>
+    <div class="site-footer-shell__grid">
+      <div class="site-footer__group">
+        <h4 class="site-footer__heading">Discover</h4>
+        <div class="site-footer__links">
+          <a class="site-footer__link" href="{{ routes.all_products_collection_url }}">New arrivals</a>
+          <a class="site-footer__link" href="/pages/membership">Our boxes</a>
+          <a class="site-footer__link" href="{{ routes.all_products_collection_url }}">Shop all</a>
+          <a class="site-footer__link" href="/products/vue-chain-necklace">Featured necklace</a>
+        </div>
+      </div>
+      <div class="site-footer__group">
+        <h4 class="site-footer__heading">Customer care</h4>
+        <div class="site-footer__links">
+          <a class="site-footer__link" href="/pages/membership">Membership</a>
+          <a class="site-footer__link" href="/products/dusk-box">Gift a box</a>
+          <a class="site-footer__link" href="{{ routes.all_products_collection_url }}">Shop collection</a>
+        </div>
+      </div>
+      <div class="site-footer__group">
+        <h4 class="site-footer__heading">Learn</h4>
+        <div class="site-footer__links">
+          <a class="site-footer__link" href="/pages/membership">How it works</a>
+          <a class="site-footer__link" href="/products/vue-chain-necklace">Vue Chain</a>
+          <a class="site-footer__link" href="/products/dusk-box">The Dusk Box</a>
+        </div>
+      </div>
+      <div class="site-footer__group">
+        <h4 class="site-footer__heading">Company</h4>
+        <div class="site-footer__links">
+          <a class="site-footer__link" href="{{ routes.root_url }}">Home</a>
+          <a class="site-footer__link" href="{{ routes.all_products_collection_url }}">Collection</a>
+          <a class="site-footer__link" href="/pages/membership">Membership</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="site-footer-shell__meta">
+    <p class="site-footer-shell__copyright">© 2026 Maison Vue. All rights reserved.</p>
+    <div class="site-footer-shell__socials">
+      <a class="site-footer__social" href="https://instagram.com">Instagram</a>
+      <a class="site-footer__social" href="https://tiktok.com">TikTok</a>
+      <a class="site-footer__social" href="https://pinterest.com">Pinterest</a>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Site footer",
+  "settings": [
+    { "type": "text", "id": "brand", "label": "Brand label" },
+    { "type": "textarea", "id": "body", "label": "Description" }
+  ],
+  "presets": [{ "name": "Site footer" }]
+}
+{% endschema %}

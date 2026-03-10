@@ -1,0 +1,186 @@
+{
+  "handle": "membership-landing",
+  "path": "/pages/membership",
+  "hero": {
+    "eyebrow": "Membership",
+    "heading": "Your Monthly Jewelry Edit.",
+    "body": "Curated by our editors. Personalized to your style. Starting at just $48 per month with over $100 in value, always.",
+    "primaryLabel": "Get Your First Box",
+    "primaryUrl": "/products/dusk-box",
+    "secondaryLabel": "See How It Works",
+    "secondaryUrl": "/pages/membership#how-it-works",
+    "imageUrl": "https://images.unsplash.com/photo-1760140176581-aaf37bcb8d3f?q=80&w=1400",
+    "imageAlt": "Editorial jewelry membership hero"
+  },
+  "trustPerks": [
+    { "label": "Free Shipping", "subLabel": "On every box" },
+    { "label": "Skip Anytime", "subLabel": "No commitments" },
+    { "label": "$100+ Value", "subLabel": "Guaranteed monthly" },
+    { "label": "12-Mo Warranty", "subLabel": "On every piece" }
+  ],
+  "steps": [
+    {
+      "stepNumber": "01",
+      "title": "Take the Style Quiz",
+      "body": "Tell us about your personal style, metal preferences, and the pieces you reach for most. Our algorithm builds your style profile in under two minutes.",
+      "detail": "We learn what you love, from gold versus silver to everyday minimal versus statement pieces.",
+      "imageUrl": "https://images.unsplash.com/photo-1702144949396-c7f53e98fd8a?q=80&w=1080",
+      "imageAlt": "Style quiz on phone"
+    },
+    {
+      "stepNumber": "02",
+      "title": "We Curate Your Box",
+      "body": "Our editorial team handpicks three to five pieces around a monthly theme, tailored to your profile. Each box is different. Each piece is intentional.",
+      "detail": "Think of it as having a personal jewelry buyer who knows your taste better than you do.",
+      "imageUrl": "https://images.unsplash.com/photo-1571975795053-950dbde7dacc?q=80&w=1080",
+      "imageAlt": "Curated jewelry collection"
+    },
+    {
+      "stepNumber": "03",
+      "title": "Unbox and Wear",
+      "body": "Your box arrives beautifully packaged every month. Keep what you love, wear it everywhere, and know your next edit is already being assembled.",
+      "detail": "Do not love a month? Skip it entirely with no charge and no guilt.",
+      "imageUrl": "https://images.unsplash.com/photo-1602177719868-98d27643bf99?q=80&w=1080",
+      "imageAlt": "Luxury unboxing experience"
+    }
+  ],
+  "benefits": [
+    {
+      "title": "Exclusive Member Pricing",
+      "body": "Get 20 to 50 percent off retail on every piece in your box. Members save an average of $340 per year on fine jewelry."
+    },
+    {
+      "title": "Early Access to Drops",
+      "body": "Shop new collections 48 hours before anyone else. Limited editions arrive first in the member inbox."
+    },
+    {
+      "title": "Premium Materials Only",
+      "body": "Solid gold vermeil, 14k gold-fill, and sterling silver. No flimsy plating. No shortcuts."
+    },
+    {
+      "title": "VIP Birthday Perks",
+      "body": "A complimentary piece from the archive, delivered in your birthday month."
+    },
+    {
+      "title": "Skip or Cancel Anytime",
+      "body": "Pause or skip in one click. No contracts, fees, or awkward offboarding."
+    },
+    {
+      "title": "12-Month Warranty",
+      "body": "Every piece is covered for a full year. If anything disappoints, it gets replaced."
+    }
+  ],
+  "tiers": [
+    {
+      "name": "Glow",
+      "price": "$48",
+      "value": "$100+ value",
+      "pieces": "3 pieces",
+      "tagline": "The everyday essential edit",
+      "summary": "Solid gold vermeil staples, classic wearable designs, and an easy entry into the stack.",
+      "badge": "",
+      "ctaLabel": "Start with Glow",
+      "ctaUrl": "/products/dusk-box"
+    },
+    {
+      "name": "Haze",
+      "price": "$68",
+      "value": "$150+ value",
+      "pieces": "3 to 4 pieces",
+      "tagline": "For the refined minimalist",
+      "summary": "Mixed metals, one semi-precious stone accent, and a styling guide in every shipment.",
+      "badge": "",
+      "ctaLabel": "Start with Haze",
+      "ctaUrl": "/products/dusk-box"
+    },
+    {
+      "name": "Dusk",
+      "price": "$88",
+      "value": "$200+ value",
+      "pieces": "4 pieces",
+      "tagline": "Statement meets subtlety",
+      "summary": "A guaranteed statement piece, collaboration access, and the most gift-worthy monthly edit.",
+      "badge": "Most Gifted",
+      "ctaLabel": "View Dusk Box",
+      "ctaUrl": "/products/dusk-box"
+    },
+    {
+      "name": "Lune",
+      "price": "$118",
+      "value": "$280+ value",
+      "pieces": "4 to 5 pieces",
+      "tagline": "The collector's monthly haul",
+      "summary": "Premium 14k gold-fill, archive piece inclusions, and personal stylist guidance.",
+      "badge": "Most Popular",
+      "ctaLabel": "Explore Lune",
+      "ctaUrl": "/products/dusk-box"
+    }
+  ],
+  "comparison": [
+    { "feature": "Pricing", "member": "20 to 50 percent off retail on every piece", "nonMember": "Full retail price" },
+    { "feature": "New Drops", "member": "48-hour early access", "nonMember": "Standard release access" },
+    { "feature": "Shipping", "member": "Free on every order", "nonMember": "$7.95 flat rate" },
+    { "feature": "Birthday", "member": "Complimentary archive piece", "nonMember": "Not available" },
+    { "feature": "Returns", "member": "Free 30-day returns", "nonMember": "14-day returns with fee" },
+    { "feature": "Warranty", "member": "12-month full coverage", "nonMember": "90-day limited coverage" }
+  ],
+  "testimonials": [
+    {
+      "name": "Sarah M.",
+      "location": "New York, NY",
+      "tier": "Lune",
+      "quote": "Every box has been worth far more than what I pay. The quality feels on par with pieces I bought for three times the price.",
+      "imageUrl": "https://images.unsplash.com/photo-1767396858279-f386711c3a81?q=80&w=400",
+      "imageAlt": "Sarah membership testimonial"
+    },
+    {
+      "name": "Jessica L.",
+      "location": "Los Angeles, CA",
+      "tier": "Haze",
+      "quote": "The skip feature is a game-changer. I skipped one month and came back to the most stunning gold hoops in January.",
+      "imageUrl": "https://images.unsplash.com/photo-1759873911657-8140566c29a0?q=80&w=400",
+      "imageAlt": "Jessica membership testimonial"
+    },
+    {
+      "name": "Priya K.",
+      "location": "Toronto, ON",
+      "tier": "Star",
+      "quote": "I gifted a membership and now my sister texts me every unboxing. It became our favorite recurring gift.",
+      "imageUrl": "https://images.unsplash.com/photo-1626122738142-bbd66f671eca?q=80&w=400",
+      "imageAlt": "Priya membership testimonial"
+    }
+  ],
+  "faqs": [
+    {
+      "question": "How does the membership work?",
+      "answer": "Choose your box tier, take the two-minute style quiz, and your first curation begins. Boxes ship on the fifteenth and can be skipped, paused, or canceled from the dashboard."
+    },
+    {
+      "question": "What kind of jewelry is included?",
+      "answer": "We use premium materials only: gold vermeil, 14k gold-fill, sterling silver, and select semi-precious stones depending on the tier."
+    },
+    {
+      "question": "Can I really skip or cancel anytime?",
+      "answer": "Yes. There are no contracts, minimum commitments, or fees. Skip a month with one click before your billing cutoff."
+    },
+    {
+      "question": "What if I do not like what I receive?",
+      "answer": "Members get free 30-day returns for store credit, and feedback is folded into future curations."
+    },
+    {
+      "question": "Can I gift a membership?",
+      "answer": "Yes. Gift memberships are available in 3, 6, and 12 month options, and the recipient completes the style quiz themselves."
+    }
+  ],
+  "finalCta": {
+    "eyebrow": "Ready?",
+    "heading": "Your First Box is Waiting.",
+    "body": "Join thousands of members who wake up to jewelry they did not know they needed, but now cannot live without.",
+    "primaryLabel": "Take the Style Quiz",
+    "primaryUrl": "/products/dusk-box",
+    "secondaryLabel": "Browse Collection",
+    "secondaryUrl": "/collections/all",
+    "imageUrl": "https://images.unsplash.com/photo-1683813786824-c17ecddec717?q=80&w=1400",
+    "imageAlt": "Luxury jewelry display"
+  }
+}

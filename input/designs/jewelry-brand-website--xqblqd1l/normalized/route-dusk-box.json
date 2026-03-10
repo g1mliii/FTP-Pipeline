@@ -1,0 +1,160 @@
+{
+  "handle": "subscription-box-detail",
+  "path": "/products/dusk-box",
+  "eyebrow": "Signature Collection",
+  "fallbackTitle": "The Dusk Box",
+  "subtitle": "Statement meets subtlety.",
+  "priceLabel": "$88 / month",
+  "valueLabel": "$242 retail value",
+  "metaLabel": "4 curated pieces · $200+ guaranteed value",
+  "story": {
+    "eyebrow": "The Dusk Philosophy",
+    "heading": "For the woman who wants both.",
+    "bodyOne": "Dusk lives in the in-between: that golden hour where understated elegance meets quiet boldness.",
+    "bodyTwo": "Every month includes one statement piece you might not buy for yourself but end up wearing constantly.",
+    "imageUrl": "https://images.unsplash.com/photo-1623699655000-b4eb2011cef4?q=80&w=1200",
+    "imageAlt": "Dusk editorial image"
+  },
+  "experience": {
+    "eyebrow": "The Experience",
+    "heading": "What Arrives at Your Door",
+    "imageUrl": "https://images.unsplash.com/photo-1758995115659-06a6cb5787eb?q=80&w=1200",
+    "imageAlt": "Dusk unboxing image"
+  },
+  "finalCta": {
+    "eyebrow": "Your move",
+    "heading": "Start with Dusk.",
+    "body": "$88 per month. Four pieces. $200+ value. Free shipping. Skip anytime. Twelve-month warranty on every piece.",
+    "primaryLabel": "Subscribe Now",
+    "primaryUrl": "/pages/membership",
+    "secondaryLabel": "Compare Membership",
+    "secondaryUrl": "/pages/membership",
+    "imageUrl": "https://images.unsplash.com/photo-1643387774080-830d29eb081a?q=80&w=1200",
+    "imageAlt": "Dusk lifestyle image"
+  },
+  "gallery": [
+    {
+      "imageUrl": "https://images.unsplash.com/photo-1745541472989-e1291941dc36?q=80&w=1200",
+      "imageAlt": "Dusk Box hero"
+    },
+    {
+      "imageUrl": "https://images.unsplash.com/photo-1666800715778-4b0409bb66bf?q=80&w=1200",
+      "imageAlt": "Dusk pieces flat lay"
+    },
+    {
+      "imageUrl": "https://images.unsplash.com/photo-1636298313371-0c9b029f7676?q=80&w=1200",
+      "imageAlt": "Gold chain detail"
+    },
+    {
+      "imageUrl": "https://images.unsplash.com/photo-1758995115659-06a6cb5787eb?q=80&w=1200",
+      "imageAlt": "Dusk packaging"
+    }
+  ],
+  "pieces": [
+    {
+      "title": "Soleil Chain Necklace",
+      "material": "14k Gold-Fill",
+      "retail": "$78",
+      "typeLabel": "Necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1636298313371-0c9b029f7676?q=80&w=600",
+      "imageAlt": "Soleil Chain Necklace"
+    },
+    {
+      "title": "Arc Hoop Earrings",
+      "material": "Sterling Silver",
+      "retail": "$54",
+      "typeLabel": "Earrings",
+      "imageUrl": "https://images.unsplash.com/photo-1693928876936-e6c25a7b79c4?q=80&w=600",
+      "imageAlt": "Arc Hoop Earrings"
+    },
+    {
+      "title": "Signet Ring",
+      "material": "14k Gold-Fill",
+      "retail": "$62",
+      "typeLabel": "Statement Piece",
+      "imageUrl": "https://images.unsplash.com/photo-1758362197676-228703a17e69?q=80&w=600",
+      "imageAlt": "Signet Ring"
+    },
+    {
+      "title": "Vermeil Cuff Bracelet",
+      "material": "14k Gold-Fill",
+      "retail": "$48",
+      "typeLabel": "Bracelet",
+      "imageUrl": "https://images.unsplash.com/photo-1731406322274-fb018de6fa97?q=80&w=600",
+      "imageAlt": "Vermeil Cuff Bracelet"
+    }
+  ],
+  "experienceSteps": [
+    { "title": "Ships on the 15th", "body": "Every Dusk box ships monthly via priority mail and arrives within three to five business days." },
+    { "title": "Signature Packaging", "body": "A matte black box with gold foil lettering, wrapped in tissue and finished with a care card." },
+    { "title": "4 Curated Pieces", "body": "Each piece arrives in its own pouch and is ready to wear or gift immediately." },
+    { "title": "Style Card Included", "body": "A styling guide walks through pairings, care tips, and the story behind the month." }
+  ],
+  "pastBoxes": [
+    {
+      "month": "January 2026",
+      "theme": "Midnight Bloom",
+      "value": "$218 value",
+      "imageUrl": "https://images.unsplash.com/photo-1708221382764-299d9e3ad257?q=80&w=600",
+      "imageAlt": "Midnight Bloom box"
+    },
+    {
+      "month": "December 2025",
+      "theme": "Winter Solstice",
+      "value": "$232 value",
+      "imageUrl": "https://images.unsplash.com/photo-1674275552496-5327af426de2?q=80&w=600",
+      "imageAlt": "Winter Solstice box"
+    },
+    {
+      "month": "November 2025",
+      "theme": "Burnished Gold",
+      "value": "$205 value",
+      "imageUrl": "https://images.unsplash.com/photo-1643387774080-830d29eb081a?q=80&w=600",
+      "imageAlt": "Burnished Gold box"
+    }
+  ],
+  "reviews": [
+    {
+      "name": "Mia R.",
+      "date": "Jan 2026",
+      "body": "Dusk is the perfect sweet spot. I get one statement piece every month that I would never have chosen for myself, but I wear constantly.",
+      "rating": "5 stars"
+    },
+    {
+      "name": "Claire T.",
+      "date": "Dec 2025",
+      "body": "I upgraded from Haze to Dusk and the jump in quality is obvious. The 14k gold-fill pieces feel genuinely luxurious.",
+      "rating": "5 stars"
+    },
+    {
+      "name": "Aaliyah J.",
+      "date": "Nov 2025",
+      "body": "Love the curation and the themes. The November box was stunning and felt like opening a gift to myself.",
+      "rating": "4 stars"
+    }
+  ],
+  "tiers": [
+    { "name": "Glow", "price": "$48", "pieces": "3 pieces", "value": "$100+ value", "state": "Compare" },
+    { "name": "Haze", "price": "$68", "pieces": "3 pieces", "value": "$150+ value", "state": "Compare" },
+    { "name": "Dusk", "price": "$88", "pieces": "4 pieces", "value": "$200+ value", "state": "Current" },
+    { "name": "Lune", "price": "$118", "pieces": "4 to 5 pieces", "value": "$280+ value", "state": "Compare" }
+  ],
+  "faqs": [
+    {
+      "question": "What exactly do I get in the Dusk box each month?",
+      "answer": "Four jewelry pieces: typically a necklace, earrings, a ring or bracelet, and one guaranteed statement piece."
+    },
+    {
+      "question": "How is Dusk different from Haze or Lune?",
+      "answer": "Dusk sits between Haze and Lune with a guaranteed statement piece, collaboration access, and the most gift-friendly monthly value."
+    },
+    {
+      "question": "Can I choose what pieces I receive?",
+      "answer": "The curation is editor-led, but you can update style notes, sizes, and metal preferences in your profile at any time."
+    },
+    {
+      "question": "Can I upgrade or downgrade my box tier?",
+      "answer": "Yes. You can switch tiers any time from the member dashboard and the change applies on the next billing cycle."
+    }
+  ]
+}

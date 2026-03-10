@@ -1,0 +1,131 @@
+<section class="editorial-product" id="shopify-section-{{ section.id }}">
+  <div class="editorial-product__hero">
+    <div class="editorial-product__gallery">
+      {% assign gallery_blocks = section.blocks | where: 'type', 'gallery' %}
+      {% for block in gallery_blocks %}
+        {% capture asset_name %}editorial-product-detail-gallery-{{ forloop.index }}.jpg{% endcapture %}
+        <img class="editorial-product__gallery-image" src="{{ asset_name | asset_url }}" alt="{{ block.settings.image_alt | escape }}" width="1200" height="1200" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+      {% endfor %}
+    </div>
+    <div class="editorial-product__summary">
+      <p class="commerce-kicker">{{ product.vendor | default: section.settings.vendor | escape }}</p>
+      <h1 class="commerce-heading">{{ product.title | default: section.settings.fallback_title | escape }}</h1>
+      <p class="editorial-product__subtitle">{{ section.settings.subtitle | escape }}</p>
+      <p class="editorial-product__rating">{{ section.settings.rating_text | escape }}</p>
+      <div class="editorial-product__price-row">
+        <span class="editorial-product__price">{{ product.price | money | default: section.settings.price_label }}</span>
+        <span class="editorial-product__badge">{{ section.settings.shipping_badge | escape }}</span>
+      </div>
+      {% assign micro_stats = section.settings.micro_stats | split: '|' %}
+      <div class="editorial-product__stats">
+        {% for item in micro_stats %}<span>{{ item | strip | escape }}</span>{% endfor %}
+      </div>
+      {% form 'product', product, class: 'editorial-product__form' %}
+        {% if product.selected_or_first_available_variant %}
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+        {% endif %}
+        <button class="button-outline" type="submit">Add to cart</button>
+      {% endform %}
+    </div>
+  </div>
+  <div class="editorial-product__vip">
+    <p class="section-eyebrow">{{ section.settings.vip_eyebrow | escape }}</p>
+    <h2 class="section-heading">{{ section.settings.vip_heading | escape }}</h2>
+    <p>{{ section.settings.vip_body | escape }}</p>
+    <div class="editorial-product__actions">
+      <a class="button-outline button-outline--accent" href="{{ section.settings.vip_primary_url }}">{{ section.settings.vip_primary_label | escape }}</a>
+      <a class="membership-landing__secondary-link" href="{{ section.settings.vip_secondary_url }}">{{ section.settings.vip_secondary_label | escape }}</a>
+    </div>
+  </div>
+  <div class="editorial-product__companions">
+    {% assign companion_blocks = section.blocks | where: 'type', 'companion' %}
+    {% for block in companion_blocks %}
+      {% capture asset_name %}editorial-product-detail-companion-{{ forloop.index }}.jpg{% endcapture %}
+      <a class="editorial-product__companion" href="{{ block.settings.link_url | default: '/products/vue-chain-necklace' }}" {{ block.shopify_attributes }}>
+        <img src="{{ asset_name | asset_url }}" alt="{{ block.settings.image_alt | escape }}" width="800" height="800" loading="lazy">
+        <span class="editorial-product__companion-tag">{{ block.settings.tag | escape }}</span>
+        <h3>{{ block.settings.title | escape }}</h3>
+        <p>{{ block.settings.price | escape }} · VIP {{ block.settings.vip_price | escape }}</p>
+      </a>
+    {% endfor %}
+  </div>
+  <div class="editorial-product__story">
+    <p class="section-eyebrow">{{ section.settings.editorial_eyebrow | escape }}</p>
+    <h2 class="section-heading section-heading--light">{{ section.settings.editorial_heading | escape }}</h2>
+    <p>{{ section.settings.editorial_body | escape }}</p>
+    <div class="editorial-product__story-stats">
+      <span>{{ section.settings.editorial_stat_one | escape }}</span>
+      <span>{{ section.settings.editorial_stat_two | escape }}</span>
+      <span>{{ section.settings.editorial_stat_three | escape }}</span>
+    </div>
+  </div>
+  <div class="editorial-product__reviews">
+    {% assign review_blocks = section.blocks | where: 'type', 'review' %}
+    {% for block in review_blocks %}
+      <article class="editorial-product__review" {{ block.shopify_attributes }}>
+        <p class="editorial-product__review-meta">{{ block.settings.name | escape }} · {{ block.settings.date | escape }}</p>
+        <h3>{{ block.settings.title | escape }}</h3>
+        <p>{{ block.settings.body | escape }}</p>
+        <span>{{ block.settings.helpful | escape }}</span>
+      </article>
+    {% endfor %}
+  </div>
+  <div class="editorial-product__faq">
+    {% assign faq_blocks = section.blocks | where: 'type', 'faq' %}
+    {% for block in faq_blocks %}
+      <details class="membership-landing__faq-item" {{ block.shopify_attributes }}>
+        <summary>{{ block.settings.question | escape }}</summary>
+        <p>{{ block.settings.answer | escape }}</p>
+      </details>
+    {% endfor %}
+  </div>
+  <div class="editorial-product__closing">
+    <h2 class="section-heading">{{ section.settings.closing_heading | escape }}</h2>
+    <p>{{ section.settings.closing_body | escape }}</p>
+    <div class="editorial-product__actions">
+      <a class="button-outline" href="{{ section.settings.closing_primary_url }}">{{ section.settings.closing_primary_label | escape }}</a>
+      <a class="membership-landing__secondary-link" href="{{ section.settings.closing_secondary_url }}">{{ section.settings.closing_secondary_label | escape }}</a>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Editorial product",
+  "settings": [
+    { "type": "text", "id": "vendor", "label": "Vendor" },
+    { "type": "text", "id": "fallback_title", "label": "Fallback title" },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle" },
+    { "type": "text", "id": "price_label", "label": "Fallback price" },
+    { "type": "text", "id": "shipping_badge", "label": "Shipping badge" },
+    { "type": "text", "id": "rating_text", "label": "Rating text" },
+    { "type": "text", "id": "micro_stats", "label": "Micro stats" },
+    { "type": "text", "id": "vip_eyebrow", "label": "VIP eyebrow" },
+    { "type": "textarea", "id": "vip_heading", "label": "VIP heading" },
+    { "type": "textarea", "id": "vip_body", "label": "VIP body" },
+    { "type": "text", "id": "vip_primary_label", "label": "VIP primary label" },
+    { "type": "url", "id": "vip_primary_url", "label": "VIP primary URL" },
+    { "type": "text", "id": "vip_secondary_label", "label": "VIP secondary label" },
+    { "type": "url", "id": "vip_secondary_url", "label": "VIP secondary URL" },
+    { "type": "text", "id": "editorial_eyebrow", "label": "Editorial eyebrow" },
+    { "type": "textarea", "id": "editorial_heading", "label": "Editorial heading" },
+    { "type": "textarea", "id": "editorial_body", "label": "Editorial body" },
+    { "type": "text", "id": "editorial_stat_one", "label": "Editorial stat one" },
+    { "type": "text", "id": "editorial_stat_two", "label": "Editorial stat two" },
+    { "type": "text", "id": "editorial_stat_three", "label": "Editorial stat three" },
+    { "type": "textarea", "id": "closing_heading", "label": "Closing heading" },
+    { "type": "textarea", "id": "closing_body", "label": "Closing body" },
+    { "type": "text", "id": "closing_primary_label", "label": "Closing primary label" },
+    { "type": "url", "id": "closing_primary_url", "label": "Closing primary URL" },
+    { "type": "text", "id": "closing_secondary_label", "label": "Closing secondary label" },
+    { "type": "url", "id": "closing_secondary_url", "label": "Closing secondary URL" }
+  ],
+  "blocks": [
+    { "type": "gallery", "name": "Gallery image", "settings": [{ "type": "text", "id": "image_alt", "label": "Image alt" }] },
+    { "type": "companion", "name": "Companion product", "settings": [{ "type": "text", "id": "title", "label": "Title" }, { "type": "text", "id": "price", "label": "Price" }, { "type": "text", "id": "vip_price", "label": "VIP price" }, { "type": "text", "id": "tag", "label": "Tag" }, { "type": "url", "id": "link_url", "label": "Link URL" }, { "type": "text", "id": "image_alt", "label": "Image alt" }] },
+    { "type": "review", "name": "Review", "settings": [{ "type": "text", "id": "name", "label": "Name" }, { "type": "text", "id": "date", "label": "Date" }, { "type": "text", "id": "title", "label": "Title" }, { "type": "textarea", "id": "body", "label": "Body" }, { "type": "text", "id": "helpful", "label": "Helpful text" }] },
+    { "type": "faq", "name": "FAQ", "settings": [{ "type": "text", "id": "question", "label": "Question" }, { "type": "textarea", "id": "answer", "label": "Answer" }] }
+  ],
+  "presets": [{ "name": "Editorial product" }]
+}
+{% endschema %}

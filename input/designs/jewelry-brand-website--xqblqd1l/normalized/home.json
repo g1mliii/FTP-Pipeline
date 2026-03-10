@@ -1,0 +1,208 @@
+{
+  "meta": {
+    "name": "Jewelry Brand Website Home",
+    "slug": "jewelry-brand-home"
+  },
+  "theme": {
+    "background": "#f8f4ef",
+    "surface": "#ffffff",
+    "text": "#0d0d0d",
+    "mutedText": "rgba(255, 255, 255, 0.72)",
+    "mutedDark": "#6e6a65",
+    "border": "#e5e5e5",
+    "accent": "#c9a96e",
+    "dark": "#0d0d0d",
+    "overlayStrong": "rgba(0, 0, 0, 0.75)",
+    "overlaySoft": "rgba(0, 0, 0, 0.10)",
+    "fontDisplay": "\"Cormorant Garamond\", serif",
+    "fontBody": "\"Inter\", sans-serif",
+    "fontImport": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap"
+  },
+  "sections": [
+    {
+      "type": "hero_stack",
+      "handle": "jewelry-home-hero",
+      "settings": {
+        "mobileHint": true
+      },
+      "blocks": [
+        {
+          "title": "START YOUR\nSTACK",
+          "subtitle": "Our glow-worthy edit is waiting.",
+          "linkLabel": "EXPLORE MEMBERSHIP",
+          "linkUrl": "/pages/membership",
+          "imageUrl": "https://images.unsplash.com/photo-1760140176581-aaf37bcb8d3f?q=80&w=1080",
+          "imageAlt": "Layered jewelry on a model",
+          "featured": true
+        },
+        {
+          "title": "THE DUSK\nBOX",
+          "subtitle": "Statement meets subtlety.",
+          "linkLabel": "VIEW DUSK BOX",
+          "linkUrl": "/products/dusk-box",
+          "imageUrl": "https://images.unsplash.com/photo-1614606140905-6a5e931e5c39?q=80&w=1080",
+          "imageAlt": "Jewelry gift box close-up",
+          "featured": false
+        },
+        {
+          "title": "THE ART OF\nWEARING LESS",
+          "subtitle": "Curated monthly. Worn forever.",
+          "linkLabel": "SHOP THE COLLECTION",
+          "linkUrl": "/collections/all",
+          "imageUrl": "https://images.unsplash.com/photo-1643320477860-e903e4af260b?q=80&w=1080",
+          "imageAlt": "Minimal gold jewelry portrait",
+          "featured": false
+        }
+      ]
+    },
+    {
+      "type": "trending_grid",
+      "handle": "jewelry-trending-grid",
+      "settings": {
+        "eyebrow": "New Arrivals",
+        "heading": "Personalised",
+        "accentText": "Keepsakes",
+        "ctaLabel": "VIEW THE FULL EDIT",
+        "ctaUrl": "/collections/all"
+      },
+      "blocks": [
+        {
+          "title": "Vue Chain Necklace",
+          "price": "$48.00",
+          "comparePrice": "",
+          "tag": "Ready to Ship",
+          "linkUrl": "/products/vue-chain-necklace",
+          "imageUrl": "https://images.unsplash.com/photo-1736436789706-005f2218a96d?q=80&w=1080",
+          "imageAlt": "Gold chain necklace on white background",
+          "soldOut": false
+        },
+        {
+          "title": "Stardust Ear Cuff",
+          "price": "$36.00",
+          "comparePrice": "",
+          "tag": "Styled in our VIP edit",
+          "linkUrl": "/products/vue-chain-necklace",
+          "imageUrl": "https://images.unsplash.com/photo-1708389828325-de1f0b8f5551?q=80&w=1080",
+          "imageAlt": "Ear cuff jewelry product shot",
+          "soldOut": false
+        },
+        {
+          "title": "Lune Stack Ring",
+          "price": "$38.00",
+          "comparePrice": "$52.00",
+          "tag": "Layered favorite",
+          "linkUrl": "/products/vue-chain-necklace",
+          "imageUrl": "https://images.unsplash.com/photo-1629704702497-ddbe07995372?q=80&w=1080",
+          "imageAlt": "Gold ring product shot",
+          "soldOut": false
+        },
+        {
+          "title": "The Dusk Box",
+          "price": "$88.00",
+          "comparePrice": "",
+          "tag": "Most Gifted",
+          "linkUrl": "/products/dusk-box",
+          "imageUrl": "https://images.unsplash.com/photo-1558882268-15aa056d885f?q=80&w=1080",
+          "imageAlt": "Curated jewelry box product shot",
+          "soldOut": false
+        }
+      ]
+    },
+    {
+      "type": "press_strip",
+      "handle": "jewelry-press-strip",
+      "settings": {
+        "heading": "Exquisite Jewelry for the Modern Icon",
+        "body": "Crafted from premium stainless steel and lavishly plated with 18K gold. Each piece epitomizes refined elegance and timeless luxury - curated monthly, delivered to your door."
+      },
+      "blocks": [
+        {
+          "label": "Harper's BAZAAR",
+          "style": "bazaar"
+        },
+        {
+          "label": "ELLE",
+          "style": "elle"
+        },
+        {
+          "label": "COSMOPOLITAN",
+          "style": "cosmo"
+        },
+        {
+          "label": "Red",
+          "style": "red"
+        }
+      ]
+    },
+    {
+      "type": "process_steps",
+      "handle": "jewelry-how-it-works",
+      "settings": {
+        "eyebrow": "The Process",
+        "heading": "How It Works",
+        "intro": "Three steps between you and your next favourite piece.",
+        "ctaLabel": "LEARN MORE ABOUT MEMBERSHIP",
+        "ctaUrl": "/pages/membership"
+      },
+      "blocks": [
+        {
+          "stepNumber": "01",
+          "icon": "star",
+          "title": "Choose Your Box",
+          "body": "Pick the tier and collection that matches your style. Manage everything from your member dashboard."
+        },
+        {
+          "stepNumber": "02",
+          "icon": "diamond",
+          "title": "We Curate",
+          "body": "Our team handpicks each piece around a monthly theme. Every selection is intentional."
+        },
+        {
+          "stepNumber": "03",
+          "icon": "package",
+          "title": "Unbox & Wear",
+          "body": "Your box arrives beautifully packaged. Open it. Wear it. Share it. Next box is already being curated."
+        }
+      ]
+    },
+    {
+      "type": "collection_grid",
+      "handle": "jewelry-collection-grid",
+      "settings": {
+        "eyebrow": "Shop the Edit",
+        "heading": "Browse by",
+        "accentText": "Collection"
+      },
+      "blocks": [
+        {
+          "title": "Rings & Stacks",
+          "linkLabel": "SHOP NOW",
+          "linkUrl": "/collections/all",
+          "imageUrl": "https://images.unsplash.com/photo-1730210715526-4653d5571bc8?q=80&w=1080",
+          "imageAlt": "Ring collection"
+        },
+        {
+          "title": "Necklaces",
+          "linkLabel": "SHOP NOW",
+          "linkUrl": "/collections/all",
+          "imageUrl": "https://images.unsplash.com/photo-1614999612412-3b1dbcd68e40?q=80&w=1080",
+          "imageAlt": "Necklace collection"
+        },
+        {
+          "title": "Earrings",
+          "linkLabel": "SHOP NOW",
+          "linkUrl": "/collections/all",
+          "imageUrl": "https://images.unsplash.com/photo-1763628212781-7d52844cf358?q=80&w=1080",
+          "imageAlt": "Earring collection"
+        },
+        {
+          "title": "The Dusk Box",
+          "linkLabel": "VIEW BOX",
+          "linkUrl": "/products/dusk-box",
+          "imageUrl": "https://images.unsplash.com/photo-1736436789706-005f2218a96d?q=80&w=1080",
+          "imageAlt": "Signature box collection"
+        }
+      ]
+    }
+  ]
+}

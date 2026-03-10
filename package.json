@@ -1,0 +1,20 @@
+{
+  "name": "figma-shopify-flow-starter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch:figma": "node scripts/fetch-figma-file.mjs",
+    "generate": "node scripts/generate-shopify-site.mjs",
+    "build:preview": "node scripts/build-site-preview.mjs",
+    "preview": "node scripts/serve-preview.mjs",
+    "validate:shopify": "node scripts/validate-shopify.mjs",
+    "push:preview": "node scripts/push-preview-theme.mjs",
+    "test:shopify-preview": "node scripts/test-shopify-preview.mjs",
+    "test:preview": "node scripts/test-site-preview.mjs",
+    "flow": "npm run generate && npm run build:preview && npm run test:preview"
+  },
+  "dependencies": {
+    "playwright": "^1.58.2"
+  }
+}
