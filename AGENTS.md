@@ -12,6 +12,27 @@ Preferred skill order after restarting Codex:
 - `playwright`: use when running browser smoke tests or visual checks against the local preview or a Shopify preview URL.
 - `figma-to-shopify-theme`: use for the repo-specific orchestration flow documented in `skills/figma-to-shopify-theme/`.
 
+## Desktop Wrapper
+
+This repo also contains a guided desktop setup wrapper under `apps/desktop/`.
+
+Use it when the task is about:
+- machine readiness for the pipeline
+- Shopify CLI installation or auth
+- Playwright installation
+- Claude plugin or skill setup
+- Codex MCP setup
+- saving store domain, Figma URL, or design slug context for repeated runs
+- saving `FIGMA_TOKEN` or storefront password in the OS credential vault
+- launching the non-interactive Claude build wrapper from the repo workspace
+- automatically opening a real Chromium window for the local Playwright preview checks after a successful desktop build
+- packaging the wrapper into Windows and macOS installers
+- launching the embedded Claude terminal from the repo workspace
+
+The desktop wrapper prepares the environment.
+It does not replace the route-aware generation, preview, validation, and Shopify push scripts in the repo root.
+When the packaged app is used, it seeds a writable starter workspace into app data on first launch and runs the repo pipeline from there.
+
 ## Route Coverage Rule
 
 Do not stop at the homepage when the Figma file includes additional routed pages.
@@ -58,7 +79,14 @@ npm run flow
 That flow must:
 - generate Shopify-compatible starter files under `output/<design-slug>/theme/`
 - build a local preview under `output/<design-slug>/preview/`
-- run Playwright smoke tests and write screenshots under `output/<design-slug>/playwright/`
+- run headed Playwright homepage and route smoke tests and write screenshots under `output/<design-slug>/playwright/`
+
+By default, the local Playwright preview scripts open a visible Chromium window so the preview checks can be watched live.
+If you need a headless run for CI or background automation, set:
+
+```powershell
+$env:PLAYWRIGHT_HEADLESS="true"
+```
 
 The repo should evolve toward a site map, not just a homepage spec. When the Figma source exposes multiple pages, normalize route/page data alongside section data and generate previewable destinations for them. Prefer split normalized files when the route data gets large instead of forcing everything into one JSON file.
 

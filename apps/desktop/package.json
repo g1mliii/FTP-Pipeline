@@ -1,0 +1,124 @@
+{
+  "name": "@figma-shopify-flow/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "out/main/index.js",
+  "description": "Electron desktop wrapper for the route-aware Figma-to-Shopify automation pipeline.",
+  "author": "subai",
+  "productName": "Figma Shopify AutoBuild",
+  "scripts": {
+    "dev": "node scripts/run-electron-vite.mjs dev",
+    "build": "node scripts/run-electron-vite.mjs build",
+    "preview": "node scripts/run-electron-vite.mjs preview",
+    "test": "vitest run",
+    "prepare:runtime": "node scripts/prepare-runtime-workspace.mjs",
+    "build:icons": "node scripts/generate-icons.mjs",
+    "prepare:dist": "npm run prepare:runtime && npm run build:icons",
+    "pack": "npm run prepare:dist && npm run build && electron-builder --dir",
+    "dist": "npm run prepare:dist && npm run build && electron-builder",
+    "dist:win": "npm run prepare:dist && npm run build && electron-builder --win nsis",
+    "dist:mac": "npm run prepare:dist && npm run build && electron-builder --mac dmg"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "adm-zip": "^0.5.16",
+    "keytar": "^7.9.0",
+    "node-pty": "^1.0.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^24.6.1",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "electron": "37.4.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^4.0.0",
+    "icon-gen": "^5.0.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
+  },
+  "build": {
+    "appId": "com.subai.figma-shopify.autobuild",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/**/*.node"
+    ],
+    "compression": "normal",
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "electronVersion": "37.4.0",
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/starter-workspace",
+        "to": "starter-workspace"
+      }
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Figma Shopify AutoBuild"
+    },
+    "mac": {
+      "icon": "icon.icns",
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "window": {
+        "width": 540,
+        "height": 400
+      },
+      "contents": [
+        {
+          "x": 148,
+          "y": 224
+        },
+        {
+          "x": 392,
+          "y": 224,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}

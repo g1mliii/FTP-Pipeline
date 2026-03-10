@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/desktop"
+  ],
   "scripts": {
     "fetch:figma": "node scripts/fetch-figma-file.mjs",
     "generate": "node scripts/generate-shopify-site.mjs",
@@ -11,10 +14,22 @@
     "validate:shopify": "node scripts/validate-shopify.mjs",
     "push:preview": "node scripts/push-preview-theme.mjs",
     "test:shopify-preview": "node scripts/test-shopify-preview.mjs",
+    "test:preview:home": "node scripts/test-home-preview.mjs",
     "test:preview": "node scripts/test-site-preview.mjs",
-    "flow": "npm run generate && npm run build:preview && npm run test:preview"
+    "flow": "npm run generate && npm run build:preview && npm run test:preview:home && npm run test:preview",
+    "desktop:dev": "npm run dev --workspace @figma-shopify-flow/desktop",
+    "desktop:build": "npm run build --workspace @figma-shopify-flow/desktop",
+    "desktop:test": "npm run test --workspace @figma-shopify-flow/desktop",
+    "desktop:icons": "npm run build:icons --workspace @figma-shopify-flow/desktop",
+    "desktop:pack": "npm run pack --workspace @figma-shopify-flow/desktop",
+    "desktop:dist": "npm run dist --workspace @figma-shopify-flow/desktop",
+    "desktop:dist:win": "npm run dist:win --workspace @figma-shopify-flow/desktop",
+    "desktop:dist:mac": "npm run dist:mac --workspace @figma-shopify-flow/desktop"
   },
   "dependencies": {
     "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "electron": "37.4.0"
   }
 }

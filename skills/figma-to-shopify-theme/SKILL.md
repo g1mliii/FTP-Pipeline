@@ -39,6 +39,7 @@ Use the starter project in this repository as the baseline implementation:
 - Base homepage generator: `scripts/generate-shopify-home.mjs`
 - Whole-site preview builder: `scripts/build-site-preview.mjs`
 - Preview server: `scripts/serve-preview.mjs`
+- Homepage browser smoke test: `scripts/test-home-preview.mjs`
 - Shopify CLI check: `scripts/validate-shopify.mjs`
 - Preview theme push: `scripts/push-preview-theme.mjs`
 - Live Shopify preview crawl: `scripts/test-shopify-preview.mjs`
@@ -48,6 +49,9 @@ Use the starter project in this repository as the baseline implementation:
 
 Generated artifacts are outputs, not source. Keep `output/` and raw Figma pulls under `input/figma/` out of version control.
 
+If the local machine still needs setup before the flow can run, the desktop wrapper under `apps/desktop/` can prepare Shopify CLI, Playwright, Claude plugin/skill wiring, Codex MCP wiring, auth prerequisites, and persisted store/Figma context before returning control to the root pipeline scripts.
+That wrapper can also be packaged with `electron-builder` into a Windows `.exe` installer or macOS `.dmg`, and the packaged app seeds a writable starter workspace on first launch.
+
 Run the full local loop with:
 
 ```powershell
@@ -55,6 +59,13 @@ $env:DESIGN_SLUG="jewelry-brand-website--xqblqd1l"
 npm install
 npx playwright install chromium
 npm run flow
+```
+
+The local preview smoke scripts open Chromium visibly by default so the Playwright checks can be watched.
+For CI-style runs, override with:
+
+```powershell
+$env:PLAYWRIGHT_HEADLESS="true"
 ```
 
 If a real Figma file is available, fetch it first with:

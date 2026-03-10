@@ -6,6 +6,7 @@ This repository is a route-aware starter for turning a Figma design into a Shopi
 - organized as valid Shopify `sections`, `snippets`, `templates`, and `assets`
 - tested locally with Playwright
 - pushed to a reusable Shopify preview theme for live verification
+- optionally fronted by a guided Electron desktop setup wrapper under `apps/desktop/`
 
 The target outcome is not "make the homepage look right." The target outcome is:
 
@@ -38,6 +39,50 @@ Those are a separate store-content seeding layer and can be done:
 
 - manually in Shopify admin
 - through the Shopify Admin API
+
+## Desktop Wrapper
+
+The repository now includes a desktop setup wrapper in `apps/desktop/`.
+
+Its current role is:
+
+- validate the local machine from the project root
+- install or verify Shopify CLI, Playwright, and Codex CLI
+- configure Claude plugins and user skill placement
+- configure Codex MCP entries for Figma and Playwright
+- persist store domain, Figma URL, and design slug context across restarts
+- store `FIGMA_TOKEN` and optional storefront password in the OS credential vault
+- guide Shopify, Claude, and Figma auth before the build phase starts
+- launch a non-interactive `claude -p` build from the repo root with the saved context
+- automatically run `scripts/test-home-preview.mjs` and `scripts/test-site-preview.mjs` in visible Playwright mode after a successful desktop build
+- package the wrapper into a Windows `.exe` installer or macOS `.dmg`
+- launch an embedded Claude terminal in the repo workspace
+
+The desktop app does not replace the root pipeline scripts.
+It prepares the environment so the existing route-aware flow is easier to run repeatedly.
+
+Run it with:
+
+```powershell
+npm install
+npm run desktop:dev
+```
+
+Useful desktop workspace commands:
+
+- `npm run desktop:dev`
+- `npm run desktop:test`
+- `npm run desktop:build`
+- `npm run desktop:pack`
+- `npm run desktop:dist:win`
+- `npm run desktop:dist:mac`
+
+Installer notes:
+
+- the desktop app now ships with a generated starter workspace seed
+- on first launch, the packaged app copies that starter workspace into its app data directory so scripts, normalized starter inputs, and local skill docs live in a writable location
+- Windows installers are built as one-click NSIS `.exe` packages
+- macOS installers are configured as `.dmg` builds and should be generated on macOS
 
 ## Design Folder Convention
 
@@ -107,6 +152,8 @@ For live Shopify validation, you need:
   Whole-site Shopify generator.
 - [scripts/build-site-preview.mjs](C:/Users/subai/Documents/test/scripts/build-site-preview.mjs)
   Multi-route local preview builder.
+- [scripts/test-home-preview.mjs](C:/Users/subai/Documents/test/scripts/test-home-preview.mjs)
+  Headed homepage preview smoke test.
 - [scripts/test-site-preview.mjs](C:/Users/subai/Documents/test/scripts/test-site-preview.mjs)
   Local Playwright route test.
 - [scripts/push-preview-theme.mjs](C:/Users/subai/Documents/test/scripts/push-preview-theme.mjs)
@@ -128,7 +175,9 @@ This repo is built to work best with an agent that understands:
 
 Use [AGENTS.md](C:/Users/subai/Documents/test/AGENTS.md) as the main repo instruction file.
 
-The local skill at [skills/figma-to-shopify-theme/SKILL.md](C:/Users/subai/Documents/test/skills/figma-to-shopify-theme/SKILL.md) should stay in the repo as the workflow reference. If your Claude environment supports additional installable tools, install equivalents for:
+The local skill at [skills/figma-to-shopify-theme/SKILL.md](C:/Users/subai/Documents/test/skills/figma-to-shopify-theme/SKILL.md) should stay in the repo as the generic workflow reference for repo-guided agents such as Codex. The desktop wrapper also installs the Claude-specific `figma-to-shopify-pipeline` skill into Claude so the embedded and non-interactive Claude runs use the packaged pipeline instructions.
+
+If your Claude environment supports additional installable tools, install equivalents for:
 
 - Figma access
 - Shopify Liquid/theme generation
@@ -139,7 +188,7 @@ In practical terms, this repo expects the agent runtime to have the equivalent o
 - `figma`
 - `shopify-liquid-themes`
 - `playwright`
-- the repo-local `figma-to-shopify-theme` skill
+- the installed Claude `figma-to-shopify-pipeline` skill
 
 If your agent runtime does not support installable skills, keep the repo-local skill and direct the agent to follow it alongside [AGENTS.md](C:/Users/subai/Documents/test/AGENTS.md).
 
@@ -171,6 +220,25 @@ From [C:/Users/subai/Documents/test](C:/Users/subai/Documents/test):
 ```powershell
 npm install
 npx playwright install chromium
+```
+
+Local preview smoke tests now launch Chromium visibly by default so route checks can be watched live.
+If you need a quiet CI-style run, set:
+
+```powershell
+$env:PLAYWRIGHT_HEADLESS="true"
+```
+
+To package the desktop wrapper itself:
+
+```powershell
+npm run desktop:dist:win
+```
+
+On macOS, build the DMG with:
+
+```powershell
+npm run desktop:dist:mac
 ```
 
 If you are using raw Figma API fetches, set:
@@ -223,7 +291,7 @@ This does all of the following:
 
 - generates `output/<design-slug>/theme/`
 - builds local routed previews in `output/<design-slug>/preview/`
-- runs Playwright route checks
+- runs the headed homepage and route Playwright checks
 - writes screenshots into `output/<design-slug>/playwright/`
 
 Use this before touching a real Shopify store.
