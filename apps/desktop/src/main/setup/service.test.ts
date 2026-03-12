@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { buildClaudePrompt, extractFigmaFileKey, isValidFigmaUrl, isValidStoreDomain, sanitizeDesignSlug, suggestDesignSlug } from "../../shared/build-utils";
 import { backupTargets, ensureDirectoryCopy } from "../../shared/config-utils";
-import { parseClaudeAuthStatus, parseClaudeMcpStatus, parseClaudePluginList, parseCodexMcpGet, parseShopifyVersion } from "../../shared/parsers";
+import { parseClaudeAuthStatus, parseClaudeMcpStatus, parseClaudePluginList, parseCodexAuthStatus, parseCodexMcpGet, parseShopifyVersion } from "../../shared/parsers";
 
 describe("setup helper parsers", () => {
   it("parses Claude auth JSON", () => {
@@ -44,6 +44,7 @@ plugin:figma:figma: https://mcp.figma.com/mcp (HTTP) - ! Needs authentication
     expect(parsed.exists).toBe(true);
     expect(parsed.connected).toBe(true);
     expect(parsed.needsAuth).toBe(false);
+    expect(parsed.detail).toContain("active one");
   });
 
   it("parses Codex MCP status", () => {
@@ -57,6 +58,12 @@ plugin:figma:figma: https://mcp.figma.com/mcp (HTTP) - ! Needs authentication
 
     expect(parsed.exists).toBe(true);
     expect(parsed.enabled).toBe(true);
+  });
+
+  it("parses Codex auth status", () => {
+    const parsed = parseCodexAuthStatus("Logged in using ChatGPT", "");
+    expect(parsed.loggedIn).toBe(true);
+    expect(parsed.detail).toContain("ChatGPT");
   });
 
   it("parses Shopify version output", () => {

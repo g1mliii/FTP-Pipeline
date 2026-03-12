@@ -1,8 +1,8 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import type { ActionResult, BackupReport, BuildDraft, BuildRunState, SecretStatus, SetupSnapshot, SetupStepId } from "../../../shared/setup-types";
+import type { ActionResult, BackupReport, BuildDraft, BuildRunState, ProviderId, SecretStatus, SetupSnapshot, SetupStepId } from "../../../shared/setup-types";
 import { isValidDesignSlug, isValidFigmaUrl, isValidStoreDomain, normalizeStoreDomain, sanitizeDesignSlug, suggestDesignSlug } from "../../../shared/build-utils";
 import { appendBuildLogChunk, emptyBuildLogBuffer } from "../lib/log-buffer";
-import { connectionDependencyIds, stepChecks, steps } from "../lib/steps";
+import { stepChecks, steps } from "../lib/steps";
 
 export interface DesktopFieldErrors {
   storeDomain?: string;
@@ -45,9 +45,9 @@ const validateConnectionFields = (values: { storeDomain: string; figmaUrl: strin
 
   if (mode === "build" || values.designSlugDraft.trim()) {
     if (!normalizedSlug) {
-      errors.designSlugDraft = "Enter a design slug before continuing.";
+      errors.designSlugDraft = "Enter a project name before continuing.";
     } else if (!isValidDesignSlug(normalizedSlug)) {
-      errors.designSlugDraft = "Use lowercase letters, numbers, and dashes only.";
+      errors.designSlugDraft = "Use letters, numbers, and dashes only.";
     }
   }
 
@@ -59,6 +59,7 @@ export function useDesktopController() {
   const [buildDraft, setBuildDraft] = useState<BuildDraft | null>(null);
   const [buildState, setBuildState] = useState<BuildRunState>({ status: "idle", command: "" });
   const [activeStep, setActiveStep] = useState<SetupStepId>("dependencies");
+  const [activeProvider, setActiveProvider] = useState<ProviderId>("claude");
   const [storeDomain, setStoreDomain] = useState("");
   const [figmaUrl, setFigmaUrl] = useState("");
   const [designSlugDraft, setDesignSlugDraft] = useState("");
@@ -83,22 +84,20 @@ export function useDesktopController() {
     () => secretStatuses.find((item) => item.id === "shopifyStorefrontPassword"),
     [secretStatuses]
   );
-  const connectionChecks = useMemo(
-    () =>
-      snapshot?.checks.filter(
-        (item) =>
-          connectionDependencyIds.includes(item.id) &&
-          item.id !== "shopifyAuth" &&
-          item.id !== "claudeAuth" &&
-          item.id !== "claudeFigma" &&
-          item.id !== "codexFigmaMcp"
-      ) ?? [],
-    [snapshot?.checks]
-  );
   const shopifyAuthCheck = useMemo(() => snapshot?.checks.find((item) => item.id === "shopifyAuth"), [snapshot?.checks]);
   const claudeAuthCheck = useMemo(() => snapshot?.checks.find((item) => item.id === "claudeAuth"), [snapshot?.checks]);
   const claudeFigmaCheck = useMemo(() => snapshot?.checks.find((item) => item.id === "claudeFigma"), [snapshot?.checks]);
+  const codexAuthCheck = useMemo(() => snapshot?.checks.find((item) => item.id === "codexAuth"), [snapshot?.checks]);
   const codexFigmaCheck = useMemo(() => snapshot?.checks.find((item) => item.id === "codexFigmaMcp"), [snapshot?.checks]);
+  const agentChecks = useMemo(
+    () =>
+      snapshot?.checks.filter((item) =>
+        activeProvider === "claude"
+          ? ["claudeCli", "claudeAuth", "claudeSkill", "claudeFigma", "claudePlaywright"].includes(item.id)
+          : ["codexCli", "codexAuth", "codexFigmaMcp", "codexPlaywrightMcp"].includes(item.id)
+      ) ?? [],
+    [activeProvider, snapshot?.checks]
+  );
   const resultMessage = actionMessage(result);
   const resultIsError = Boolean(result && "ok" in result && !result.ok);
   const persistedDesignSlug = useMemo(
@@ -230,7 +229,7 @@ export function useDesktopController() {
     }
 
     setFieldErrors({});
-    await runAction("shopify-auth", () => window.desktopApi.startShopifyAuth(storeDomain));
+    await runAction(shopifyAuthCheck?.status === "ready" ? "checking Shopify session" : "starting Shopify auth", () => window.desktopApi.startShopifyAuth(storeDomain));
   };
 
   const startBuild = async () => {
@@ -286,7 +285,14 @@ export function useDesktopController() {
     }
   };
 
-  const launchClaude = async () => {
+  const toggleClaudeTerminal = async () => {
+    if (terminalVisible) {
+      setTerminalReady(false);
+      setTerminalVisible(false);
+      void window.desktopApi.closeClaudeTerminal();
+      return;
+    }
+
     setTerminalVisible(true);
   };
 
@@ -300,7 +306,8 @@ export function useDesktopController() {
         steps
           .filter((step) => {
             const stepItems = snapshot.checks.filter((item) => stepChecks[step.id].includes(item.id));
-            return stepItems.length === 0 || stepItems.every((item) => item.status === "ready");
+            const requiredItems = stepItems.filter((item) => item.required);
+            return requiredItems.length === 0 || requiredItems.every((item) => item.status === "ready");
           })
           .map((step) => step.id)
       );
@@ -348,6 +355,7 @@ export function useDesktopController() {
     const firstIncomplete = steps.find((step) =>
       snapshot.checks
         .filter((item) => stepChecks[step.id].includes(item.id))
+        .filter((item) => item.required)
         .some((item) => item.status !== "ready")
     );
     setActiveStep(firstIncomplete?.id ?? "build");
@@ -386,6 +394,8 @@ export function useDesktopController() {
 
   return {
     activeStep,
+    activeProvider,
+    agentChecks,
     buildDraft,
     buildState,
     busy: Boolean(busy),
@@ -393,10 +403,10 @@ export function useDesktopController() {
     checksRefreshing,
     cancelBuild,
     completedSteps,
-    connectionChecks,
     shopifyAuthCheck,
     claudeAuthCheck,
     claudeFigmaCheck,
+    codexAuthCheck,
     codexFigmaCheck,
     deferredBuildLogSegments,
     designSlugDraft,
@@ -406,7 +416,7 @@ export function useDesktopController() {
     figmaTokenStatus,
     figmaUrl,
     figmaUrlRef,
-    launchClaude,
+    launchClaude: toggleClaudeTerminal,
     refreshAll,
     result,
     resultIsError,
@@ -415,6 +425,7 @@ export function useDesktopController() {
     saveConnections,
     secretStatuses,
     setActiveStep,
+    setActiveProvider,
     setDesignSlugDraft: (value: string) => {
       clearFieldError("designSlugDraft");
       setDesignSlugDraft(value);

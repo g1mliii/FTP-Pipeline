@@ -18,7 +18,7 @@ import type {
   SetupSnapshot
 } from "../../shared/setup-types";
 import { backupTargets, ensureDirectoryCopy } from "../../shared/config-utils";
-import { parseClaudeAuthStatus, parseClaudeMcpStatus, parseClaudePluginList, parseCodexMcpGet, parseShopifyVersion } from "../../shared/parsers";
+import { parseClaudeAuthStatus, parseClaudeMcpStatus, parseClaudePluginList, parseCodexAuthStatus, parseCodexMcpGet, parseShopifyVersion } from "../../shared/parsers";
 import { detectFirstUrl, runCommand, runNpmGlobalInstall, runShopifyCommand } from "./commands";
 import { SecretStore } from "./secret-store";
 import { findWorkspaceRoot, getUserPaths } from "./paths";
@@ -34,6 +34,7 @@ const CHECK_ORDER: CheckId[] = [
   "playwrightPkg",
   "playwrightBrowser",
   "codexCli",
+  "codexAuth",
   "claudeCli",
   "claudeAuth",
   "claudeSkill",
@@ -51,14 +52,15 @@ const CHECK_META: Record<CheckId, { label: string; required: boolean }> = {
   shopifyCli: { label: "Shopify CLI", required: true },
   playwrightPkg: { label: "Playwright package", required: true },
   playwrightBrowser: { label: "Playwright Chromium", required: true },
-  codexCli: { label: "Codex CLI", required: true },
+  codexCli: { label: "Codex CLI", required: false },
+  codexAuth: { label: "Codex auth", required: false },
   claudeCli: { label: "Claude CLI", required: true },
   claudeAuth: { label: "Claude auth", required: true },
   claudeSkill: { label: "Claude repo skill", required: true },
   claudeFigma: { label: "Claude Figma", required: true },
   claudePlaywright: { label: "Claude Playwright", required: true },
-  codexFigmaMcp: { label: "Codex Figma MCP", required: true },
-  codexPlaywrightMcp: { label: "Codex Playwright MCP", required: true },
+  codexFigmaMcp: { label: "Codex Figma MCP", required: false },
+  codexPlaywrightMcp: { label: "Codex Playwright MCP", required: false },
   shopifyAuth: { label: "Shopify auth", required: true }
 };
 
@@ -297,6 +299,7 @@ export class SetupService {
       playwrightVersion,
       playwrightBrowser,
       codexCheck,
+      codexAuth,
       claudeCheck,
       claudeAuth,
       skillReady,
@@ -317,6 +320,7 @@ export class SetupService {
         { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }
       ),
       runCommand("codex", ["--help"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }),
+      runCommand("codex", ["login", "status"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }),
       runCommand("claude", ["--version"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }),
       runCommand("claude", ["auth", "status"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }),
       fileExists(path.join(userPaths.claudeSkills, "figma-to-shopify-pipeline", "SKILL.md")),
@@ -331,6 +335,7 @@ export class SetupService {
     const parsedShopify = parseShopifyVersion(shopifyVersion.stdout, shopifyVersion.stderr);
     const executablePath = playwrightBrowser.stdout.trim();
     const browserReady = playwrightBrowser.ok && executablePath.length > 0 && (await fileExists(executablePath));
+    const parsedCodexAuth = parseCodexAuthStatus(codexAuth.stdout, codexAuth.stderr);
     const parsedAuth = parseClaudeAuthStatus(claudeAuth.stdout, claudeAuth.stderr);
     const figmaPlugin = parseClaudePluginList(claudePlugins.stdout, "figma@claude-plugins-official");
     const playwrightPlugin = parseClaudePluginList(claudePlugins.stdout, "playwright@claude-plugins-official");
@@ -344,6 +349,7 @@ export class SetupService {
     checks.push(check("playwrightPkg", playwrightVersion.ok ? "ready" : "action_required", playwrightVersion.ok ? playwrightVersion.stdout.trim() : playwrightVersion.stderr || "Playwright package missing.", playwrightVersion.command));
     checks.push(check("playwrightBrowser", browserReady ? "ready" : "action_required", browserReady ? executablePath : playwrightBrowser.stderr || "Chromium is not installed.", playwrightBrowser.command));
     checks.push(check("codexCli", codexCheck.ok ? "ready" : "action_required", codexCheck.ok ? "Codex CLI is installed." : codexCheck.stderr || "Codex CLI missing.", codexCheck.command));
+    checks.push(check("codexAuth", parsedCodexAuth.loggedIn ? "ready" : "auth_required", parsedCodexAuth.detail, codexAuth.command));
     checks.push(check("claudeCli", claudeCheck.ok ? "ready" : "action_required", claudeCheck.ok ? claudeCheck.stdout.trim() || claudeCheck.stderr.trim() : claudeCheck.stderr || "Claude CLI missing.", claudeCheck.command));
     checks.push(check("claudeAuth", parsedAuth.loggedIn ? "ready" : "auth_required", parsedAuth.detail, claudeAuth.command));
     checks.push(check("claudeSkill", skillReady ? "ready" : "action_required", skillReady ? "figma-to-shopify-pipeline skill is installed." : "Install the repo skill into Claude's user skills directory."));
@@ -376,16 +382,18 @@ export class SetupService {
           figmaMcp.connected ? "figma" : "",
           playwrightMcp.connected || playwrightPlugin.enabled ? "playwright" : "",
           skillReady ? "figma-to-shopify-pipeline" : ""
-        ].filter(Boolean)
+        ].filter(Boolean),
+        detail: parsedAuth.detail
       },
       {
         provider: "codex",
         installed: codexCheck.ok,
-        authenticated: true,
+        authenticated: parsedCodexAuth.loggedIn,
         integrations: checks
           .filter((item) => item.id === "codexFigmaMcp" || item.id === "codexPlaywrightMcp")
           .filter((item) => item.status === "ready")
-          .map((item) => (item.id === "codexFigmaMcp" ? "figma" : "playwright"))
+          .map((item) => (item.id === "codexFigmaMcp" ? "figma" : "playwright")),
+        detail: parsedCodexAuth.detail
       }
     ];
 
@@ -695,18 +703,22 @@ export class SetupService {
     if (existingAuth.ok) {
       return {
         ok: true,
-        message: "Shopify auth finished.",
+        message: `Shopify is already authenticated for ${trimmedDomain}.`,
         outcome: existingAuth,
         snapshot: await this.runChecks({ storeDomain: trimmedDomain })
       };
     }
 
     const outcome = await runShopifyCommand(["auth", "login", "--store", trimmedDomain], this.workspaceRoot);
-    await maybeOpenAuthUrl(`${outcome.stdout}\n${outcome.stderr}`);
+    const openedBrowser = await maybeOpenAuthUrl(`${outcome.stdout}\n${outcome.stderr}`);
 
     return {
       ok: outcome.ok,
-      message: outcome.ok ? "Shopify auth finished." : "Shopify auth requires completion.",
+      message: outcome.ok
+        ? `Shopify auth finished for ${trimmedDomain}.`
+        : openedBrowser
+          ? `Complete Shopify login in the browser for ${trimmedDomain}, then refresh checks if needed.`
+          : `Shopify auth requires completion for ${trimmedDomain}.`,
       outcome,
       snapshot: await this.runChecks({ storeDomain: trimmedDomain })
     };
@@ -729,6 +741,28 @@ export class SetupService {
     return {
       ok: outcome.ok,
       message: outcome.ok ? "Claude auth finished." : "Claude auth requires completion.",
+      outcome,
+      snapshot: await this.runChecks()
+    };
+  }
+
+  async startCodexAuth(): Promise<ActionResult> {
+    const currentAuth = await runCommand("codex", ["login", "status"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS });
+    const parsedAuth = parseCodexAuthStatus(currentAuth.stdout, currentAuth.stderr);
+    if (parsedAuth.loggedIn) {
+      return {
+        ok: true,
+        message: "Codex auth finished.",
+        outcome: currentAuth,
+        snapshot: await this.runChecks()
+      };
+    }
+
+    const outcome = await runCommand("codex", ["login"], { cwd: this.workspaceRoot });
+    await maybeOpenAuthUrl(`${outcome.stdout}\n${outcome.stderr}`);
+    return {
+      ok: outcome.ok,
+      message: outcome.ok ? "Codex auth finished." : "Codex auth requires completion.",
       outcome,
       snapshot: await this.runChecks()
     };

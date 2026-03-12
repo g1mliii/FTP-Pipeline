@@ -178,6 +178,10 @@ app.whenReady().then(async () => {
     assertTrustedEvent(event);
     return setupService.startClaudeAuth();
   });
+  handleIpc("setup:startCodexAuth", async (event) => {
+    assertTrustedEvent(event);
+    return setupService.startCodexAuth();
+  });
   handleIpc("setup:startFigmaAuth", async (event, provider: unknown) => {
     assertTrustedEvent(event);
     return setupService.startFigmaAuth(readProvider(provider));
@@ -232,6 +236,11 @@ app.whenReady().then(async () => {
   handleIpc("chat:launchClaudeTerminal", async (event, context?: LaunchClaudeContext) => {
     assertTrustedEvent(event);
     terminalManager?.launch({ storeDomain: readOptionalString(context?.storeDomain) });
+    return true;
+  });
+  handleIpc("chat:closeClaudeTerminal", async (event) => {
+    assertTrustedEvent(event);
+    terminalManager?.dispose();
     return true;
   });
   handleIpc("chat:write", async (event, data: unknown) => {

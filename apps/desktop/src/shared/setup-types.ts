@@ -1,4 +1,4 @@
-export type SetupStepId = "dependencies" | "claude" | "codex" | "connections" | "build";
+export type SetupStepId = "dependencies" | "agent" | "connections" | "build";
 
 export type CheckId =
   | "node"
@@ -8,6 +8,7 @@ export type CheckId =
   | "playwrightPkg"
   | "playwrightBrowser"
   | "codexCli"
+  | "codexAuth"
   | "claudeCli"
   | "claudeAuth"
   | "claudeSkill"

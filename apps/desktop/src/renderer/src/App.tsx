@@ -1,3 +1,4 @@
+import { AgentStep } from "./components/AgentStep";
 import { ConnectionsStep } from "./components/ConnectionsStep";
 import { BuildStep } from "./components/BuildStep";
 import { CheckCard } from "./components/CheckCard";
@@ -22,34 +23,36 @@ function App() {
       />
 
       <main id="app-main" className="app-main">
-        <header className="hero-panel">
-          <div className="min-w-0">
-            <p className="eyebrow">Guided setup</p>
-            <h2>Persist store context, secure vault values, and launch Claude from the repo root</h2>
-            <p className="hero-copy">
-              The wrapper keeps store and Figma context across restarts, stores sensitive values in the OS credential
-              vault, and runs a non-interactive Claude build without bypassing the existing route-aware repo flow.
-            </p>
-          </div>
-          <div className="hero-actions">
-            <button
-              className="button button-secondary"
-              type="button"
-              disabled={controller.busy || controller.checksRefreshing}
-              onClick={() => void controller.refreshAll()}
-            >
-              {controller.checksRefreshing ? "Refreshing…" : "Refresh Checks"}
-            </button>
-            <button
-              className="button"
-              type="button"
-              disabled={controller.busy}
-              onClick={() => void controller.runAction("backup", () => window.desktopApi.backupConfigs())}
-            >
-              Backup Configs
-            </button>
-          </div>
-        </header>
+        {controller.activeStep === "dependencies" ? (
+          <header className="hero-panel">
+            <div className="min-w-0">
+              <p className="eyebrow">Guided setup</p>
+              <h2>Persist store context, secure vault values, and launch Claude from the repo root</h2>
+              <p className="hero-copy">
+                The wrapper keeps store and Figma context across restarts, stores sensitive values in the OS credential
+                vault, and runs a non-interactive Claude build without bypassing the existing route-aware repo flow.
+              </p>
+            </div>
+            <div className="hero-actions">
+              <button
+                className="button button-secondary button-toolbar"
+                type="button"
+                disabled={controller.busy || controller.checksRefreshing}
+                onClick={() => void controller.refreshAll()}
+              >
+                {controller.checksRefreshing ? "Refreshing…" : "Refresh Checks"}
+              </button>
+              <button
+                className="button button-toolbar"
+                type="button"
+                disabled={controller.busy}
+                onClick={() => void controller.runAction("backup", () => window.desktopApi.backupConfigs())}
+              >
+                Backup Configs
+              </button>
+            </div>
+          </header>
+        ) : null}
 
         {controller.resultMessage ? (
           <div aria-live="polite" className={`banner${controller.resultIsError ? " is-error-banner" : ""}`} role="status">
@@ -64,15 +67,37 @@ function App() {
                 <p className="eyebrow">Current step</p>
                 <h3>{controller.steps.find((item) => item.id === controller.activeStep)?.title}</h3>
               </div>
-              {controller.busyLabel ? <span className="busy-pill">{controller.busyLabel}…</span> : null}
-              {!controller.busyLabel && controller.checksRefreshing ? <span className="busy-pill">Refreshing checks…</span> : null}
+              <div className="panel-header-side">
+                {controller.busyLabel ? <span className="busy-pill">{controller.busyLabel}…</span> : null}
+                {!controller.busyLabel && controller.checksRefreshing ? <span className="busy-pill">Refreshing checks…</span> : null}
+                {controller.activeStep !== "dependencies" ? (
+                  <div className="panel-header-actions">
+                    <button
+                      className="button button-secondary button-toolbar"
+                      type="button"
+                      disabled={controller.busy || controller.checksRefreshing}
+                      onClick={() => void controller.refreshAll()}
+                    >
+                      {controller.checksRefreshing ? "Refreshing…" : "Refresh Checks"}
+                    </button>
+                    <button
+                      className="button button-toolbar"
+                      type="button"
+                      disabled={controller.busy}
+                      onClick={() => void controller.runAction("backup", () => window.desktopApi.backupConfigs())}
+                    >
+                      Backup Configs
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             {controller.activeStep === "dependencies" ? (
               <>
                 <div className="panel-actions">
                   <button
-                    className="button"
+                    className="button button-action"
                     type="button"
                     disabled={controller.busy}
                     onClick={() => void controller.runAction("dependencies", () => window.desktopApi.installDependencies())}
@@ -100,69 +125,26 @@ function App() {
               </>
             ) : null}
 
-            {controller.activeStep === "claude" ? (
+            {controller.activeStep === "agent" ? (
               <>
-                <div className="panel-actions">
-                  <button
-                    className="button"
-                    type="button"
-                    disabled={controller.busy}
-                    onClick={() => void controller.runAction("claude", () => window.desktopApi.configureClaude())}
-                  >
-                    Configure Claude
-                  </button>
-                  <button
-                    className="button button-secondary"
-                    type="button"
-                    disabled={controller.busy}
-                    onClick={() => void controller.runAction("claude-figma-auth", () => window.desktopApi.startFigmaAuth("claude"))}
-                  >
-                    Setup Claude Figma
-                  </button>
-                </div>
-                <div className="check-list">
-                  {checksForStep("claude").map((item) => (
-                    <CheckCard key={item.id} item={item} />
-                  ))}
-                </div>
-              </>
-            ) : null}
-
-            {controller.activeStep === "codex" ? (
-              <>
-                <div className="panel-actions">
-                  <button
-                    className="button"
-                    type="button"
-                    disabled={controller.busy}
-                    onClick={() => void controller.runAction("codex", () => window.desktopApi.configureCodex())}
-                  >
-                    Configure Codex
-                  </button>
-                  <button
-                    className="button button-secondary"
-                    type="button"
-                    disabled={controller.busy}
-                    onClick={() => void controller.runAction("codex-figma-auth", () => window.desktopApi.startFigmaAuth("codex"))}
-                  >
-                    Connect Codex Figma
-                  </button>
-                </div>
-                <div className="check-list">
-                  {checksForStep("codex").map((item) => (
-                    <CheckCard key={item.id} item={item} />
-                  ))}
-                </div>
+                <AgentStep
+                  activeProvider={controller.activeProvider}
+                  busy={controller.busy}
+                  checks={controller.agentChecks}
+                  onSelectProvider={controller.setActiveProvider}
+                  onConfigureClaude={() => void controller.runAction("claude", () => window.desktopApi.configureClaude())}
+                  onConfigureCodex={() => void controller.runAction("codex", () => window.desktopApi.configureCodex())}
+                  onStartClaudeAuth={() => void controller.runAction("claude-auth", () => window.desktopApi.startClaudeAuth())}
+                  onStartCodexAuth={() => void controller.runAction("codex-auth", () => window.desktopApi.startCodexAuth())}
+                  onStartClaudeFigmaAuth={() => void controller.runAction("claude-figma-auth", () => window.desktopApi.startFigmaAuth("claude"))}
+                  onStartCodexFigmaAuth={() => void controller.runAction("codex-figma-auth", () => window.desktopApi.startFigmaAuth("codex"))}
+                />
               </>
             ) : null}
 
             {controller.activeStep === "connections" ? (
               <ConnectionsStep
                 busy={controller.busy}
-                claudeAuthCheck={controller.claudeAuthCheck}
-                claudeFigmaCheck={controller.claudeFigmaCheck}
-                connectionChecks={controller.connectionChecks}
-                codexFigmaCheck={controller.codexFigmaCheck}
                 designSlugDraft={controller.designSlugDraft}
                 designSlugRef={controller.designSlugRef}
                 errors={controller.fieldErrors}
@@ -196,9 +178,6 @@ function App() {
                     { clearSecret: "shopifyStorefrontPassword" }
                   )
                 }
-                onStartClaudeAuth={() => void controller.runAction("claude-auth", () => window.desktopApi.startConnectionClaudeAuth())}
-                onStartClaudeFigmaAuth={() => void controller.runAction("claude-figma-auth", () => window.desktopApi.startFigmaAuth("claude"))}
-                onStartCodexFigmaAuth={() => void controller.runAction("codex-figma-auth", () => window.desktopApi.startFigmaAuth("codex"))}
                 onStartShopifyAuth={() => void controller.startShopifyAuth()}
                 shopifyAuthCheck={controller.shopifyAuthCheck}
               />
@@ -231,7 +210,13 @@ function App() {
             ) : null}
           </section>
 
-          <RuntimeSummary runtimeStates={controller.snapshot?.runtimeStates ?? []} secretStatuses={controller.secretStatuses} />
+          <div className="side-column">
+            <RuntimeSummary
+              runtimeStates={controller.snapshot?.runtimeStates ?? []}
+              secretStatuses={controller.secretStatuses}
+              dense={controller.activeStep === "agent" || controller.activeStep === "connections" || controller.activeStep === "build"}
+            />
+          </div>
         </section>
       </main>
     </div>

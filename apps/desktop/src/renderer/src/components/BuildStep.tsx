@@ -60,10 +60,11 @@ function BuildStepComponent({
     () => (buildLogSegments.length > 0 ? buildLogSegments.join("") : "No build output yet."),
     [buildLogSegments]
   );
+  const hasBuildOutput = buildLogSegments.length > 0;
 
   return (
-    <div className="build-stack">
-      <div className="form-grid">
+    <div className="build-stack build-step">
+      <div className="form-grid build-form-grid">
         <label className="is-wide">
           <span>Figma File URL</span>
           <input
@@ -97,12 +98,12 @@ function BuildStepComponent({
         </label>
 
         <label>
-          <span>Design Slug</span>
+          <span>Project Name</span>
           <input
             ref={designSlugRef}
             autoComplete="off"
             name="buildDesignSlug"
-            placeholder="my-design-slug…"
+            placeholder="my-project-name…"
             spellCheck={false}
             type="text"
             value={designSlugDraft}
@@ -113,7 +114,7 @@ function BuildStepComponent({
       </div>
 
       <div className="build-summary">
-        <article className="check-card is-idle">
+        <article className="check-card is-idle is-compact">
           <div className="check-row">
             <div className="min-w-0">
               <h4>Draft Context</h4>
@@ -124,26 +125,26 @@ function BuildStepComponent({
           {buildState.summary ? <p>{buildState.summary}</p> : null}
           {buildDraft ? (
             <div className="draft-metadata">
-              <span>Figma token: {buildDraft.figmaTokenStored ? "stored" : "missing"}</span>
+              <span>Optional Figma API token: {buildDraft.figmaTokenStored ? "stored" : "not set"}</span>
               <span>Storefront password: {buildDraft.storefrontPasswordStored ? "stored" : "not set"}</span>
             </div>
           ) : null}
         </article>
       </div>
 
-      <div className="panel-actions">
-        <button className="button" type="button" disabled={busy || buildState.status === "running"} onClick={onStartBuild}>
+      <div className="panel-actions build-actions">
+        <button className="button button-action" type="button" disabled={busy || buildState.status === "running"} onClick={onStartBuild}>
           {buildState.status === "running" ? "Building…" : "Start Build & Watch Tests"}
         </button>
-        <button className="button button-secondary" type="button" disabled={buildState.status !== "running"} onClick={onCancelBuild}>
+        <button className="button button-secondary button-action" type="button" disabled={buildState.status !== "running"} onClick={onCancelBuild}>
           Cancel Build
         </button>
-        <button className="button button-secondary" type="button" disabled={busy || terminalVisible} onClick={onLaunchTerminal}>
-          {terminalVisible ? "Claude Terminal Open" : "Launch Claude Terminal"}
+        <button className="button button-secondary button-action" type="button" disabled={busy && !terminalVisible} onClick={onLaunchTerminal}>
+          {terminalVisible ? "Close Claude Terminal" : "Launch Claude Terminal"}
         </button>
       </div>
 
-      <section className="build-terminal-panel">
+      <section className={`build-terminal-panel ${terminalVisible ? "is-active" : "is-idle"}`}>
         <div className="terminal-header">
           <div className="min-w-0">
             <p className="eyebrow">Interactive orchestration</p>
@@ -163,7 +164,7 @@ function BuildStepComponent({
             <p>A real browser window opens automatically during the homepage and route preview checks.</p>
           </div>
         </div>
-        <pre>{buildOutputText}</pre>
+        <pre className={hasBuildOutput ? "has-output" : "is-empty"}>{buildOutputText}</pre>
       </div>
     </div>
   );

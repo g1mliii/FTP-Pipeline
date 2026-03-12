@@ -1,32 +1,18 @@
 import type { CheckResult, SetupStepId } from "../../../shared/setup-types";
 
 export const steps: Array<{ id: SetupStepId; title: string; description: string }> = [
-  { id: "dependencies", title: "Dependencies", description: "Node, npm, Shopify CLI, Playwright, and Codex." },
-  { id: "claude", title: "Claude", description: "Claude auth, skills, and plugins." },
-  { id: "codex", title: "Codex", description: "Codex CLI plus Figma and Playwright MCPs." },
+  { id: "dependencies", title: "Dependencies", description: "Core runtime, repo install, Shopify CLI, and Playwright browser." },
+  { id: "agent", title: "Agent", description: "Claude-first setup with optional Codex support." },
   { id: "connections", title: "Connections", description: "Store context, auth, and secure vault values." },
   { id: "build", title: "Build", description: "Launch a Claude build and stream the output live." }
 ];
 
 export const stepChecks: Record<SetupStepId, string[]> = {
-  dependencies: ["node", "npm", "repoDeps", "shopifyCli", "playwrightPkg", "playwrightBrowser", "codexCli"],
-  claude: ["claudeCli", "claudeAuth", "claudeSkill", "claudeFigma", "claudePlaywright"],
-  codex: ["codexFigmaMcp", "codexPlaywrightMcp"],
+  dependencies: ["node", "repoDeps", "shopifyCli", "playwrightBrowser"],
+  agent: ["claudeCli", "claudeAuth", "claudeSkill", "claudeFigma", "claudePlaywright", "codexCli", "codexAuth", "codexFigmaMcp", "codexPlaywrightMcp"],
   connections: ["shopifyAuth"],
   build: []
 };
-
-export const connectionDependencyIds = [
-  "shopifyCli",
-  "playwrightPkg",
-  "playwrightBrowser",
-  "claudeAuth",
-  "claudeFigma",
-  "claudePlaywright",
-  "codexFigmaMcp",
-  "codexPlaywrightMcp",
-  "shopifyAuth"
-];
 
 export const statusTone = {
   ready: "is-ready",

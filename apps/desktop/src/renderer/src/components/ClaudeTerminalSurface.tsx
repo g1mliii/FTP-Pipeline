@@ -28,6 +28,8 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
     let offExit: () => void = () => {};
     let resizeFrame: number | null = null;
     let lastTerminalSize: { cols: number; rows: number } | null = null;
+    let terminalTextarea: HTMLTextAreaElement | null = null;
+    let pasteTarget: HTMLElement | null = null;
 
     const flushResize = () => {
       fitAddon?.fit();
@@ -55,6 +57,43 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
           flushResize();
         }
       });
+    };
+
+    const pasteText = async (text: string) => {
+      if (!text || disposed) {
+        return;
+      }
+
+      terminal?.focus();
+      await window.desktopApi.writeTerminal(text);
+    };
+
+    const pasteFromClipboard = async () => {
+      const text = await window.desktopApi.readClipboardText();
+      await pasteText(text);
+    };
+
+    const handlePaste = (event: ClipboardEvent) => {
+      event.preventDefault();
+      const text = event.clipboardData?.getData("text") ?? "";
+      void pasteText(text);
+    };
+
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+      void pasteFromClipboard();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isPasteShortcut =
+        ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") || (event.shiftKey && event.key === "Insert");
+
+      if (!isPasteShortcut) {
+        return;
+      }
+
+      event.preventDefault();
+      void pasteFromClipboard();
     };
 
     const setup = async () => {
@@ -86,6 +125,11 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
         fitAddon = new FitAddon();
         terminal.loadAddon(fitAddon);
         terminal.open(surfaceRef.current);
+        pasteTarget = surfaceRef.current;
+        terminalTextarea = surfaceRef.current.querySelector("textarea");
+        pasteTarget.addEventListener("paste", handlePaste);
+        pasteTarget.addEventListener("contextmenu", handleContextMenu);
+        terminalTextarea?.addEventListener("keydown", handleKeyDown);
         scheduleResize();
         terminal.focus();
         terminal.onData((data: string) => {
@@ -129,6 +173,9 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
       offData();
       offSystem();
       offExit();
+      pasteTarget?.removeEventListener("paste", handlePaste);
+      pasteTarget?.removeEventListener("contextmenu", handleContextMenu);
+      terminalTextarea?.removeEventListener("keydown", handleKeyDown);
       observer?.disconnect();
       terminal?.dispose();
     };
@@ -146,7 +193,9 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
     <>
       {loading ? <p className="hint-copy">Loading terminal…</p> : null}
       {errorMessage ? <p className="field-error">{errorMessage}</p> : null}
-      <div ref={surfaceRef} className="terminal-surface terminal-surface-large" />
+      <div className="terminal-shell terminal-surface-large">
+        <div ref={surfaceRef} className="terminal-surface" />
+      </div>
     </>
   );
 }

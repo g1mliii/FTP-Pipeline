@@ -9,7 +9,7 @@ export interface CommandOptions {
   timeoutMs?: number;
 }
 
-const WINDOWS_SCRIPT_COMMANDS = new Set(["npm", "npx", "shopify"]);
+const WINDOWS_SCRIPT_COMMANDS = new Set(["npm", "npx", "shopify", "codex", "claude"]);
 
 const resolveWindowsScriptPath = (command: string) => {
   const candidates = [

@@ -3,7 +3,7 @@ import type { SecretId, SecretStatus } from "../../shared/setup-types";
 const SERVICE_NAME = "figma-shopify-flow.desktop";
 
 const SECRET_META: Record<SecretId, { account: string; label: string }> = {
-  figmaToken: { account: "figma-token", label: "Figma token" },
+  figmaToken: { account: "figma-token", label: "Optional Figma API token" },
   shopifyStorefrontPassword: { account: "shopify-storefront-password", label: "Storefront password" }
 };
 
@@ -70,7 +70,14 @@ export class SecretStore {
           id,
           label: SECRET_META[id].label,
           stored,
-          detail: stored ? "Stored in the OS credential vault." : "Not stored yet."
+          detail:
+            id === "figmaToken"
+              ? stored
+                ? "Stored in the OS credential vault for repo scripts that use FIGMA_TOKEN."
+                : "Optional. Only needed for repo scripts that use FIGMA_TOKEN instead of Claude/Codex Figma auth."
+              : stored
+                ? "Stored in the OS credential vault."
+                : "Not stored yet."
         };
       })
     );

@@ -3,11 +3,12 @@ import { prettyStatus, statusTone } from "../lib/steps";
 
 interface CheckCardProps {
   item: CheckResult;
+  compact?: boolean;
 }
 
-export function CheckCard({ item }: CheckCardProps) {
+export function CheckCard({ item, compact = false }: CheckCardProps) {
   return (
-    <article className={`check-card ${statusTone[item.status]}`}>
+    <article className={`check-card ${statusTone[item.status]}${compact ? " is-compact" : ""}`}>
       <div className="check-row">
         <div className="min-w-0">
           <h4>{item.label}</h4>

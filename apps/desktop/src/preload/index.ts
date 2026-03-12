@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import type { BuildInput, BuildRunState, LaunchClaudeContext, ProviderId, SecretId, SetupInputState } from "../shared/setup-types";
 
 const require = createRequire(import.meta.url);
-const { contextBridge, ipcRenderer } = require("electron");
+const { clipboard, contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("desktopApi", {
   runChecks: (inputs?: Partial<SetupInputState>) => ipcRenderer.invoke("setup:runChecks", inputs),
@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld("desktopApi", {
   configureCodex: () => ipcRenderer.invoke("setup:configureCodex"),
   startShopifyAuth: (storeDomain: string) => ipcRenderer.invoke("setup:startShopifyAuth", storeDomain),
   startClaudeAuth: () => ipcRenderer.invoke("setup:startClaudeAuth"),
+  startCodexAuth: () => ipcRenderer.invoke("setup:startCodexAuth"),
   startFigmaAuth: (provider: ProviderId) => ipcRenderer.invoke("setup:startFigmaAuth", provider),
   getRuntimeState: (inputs?: Partial<SetupInputState>) => ipcRenderer.invoke("setup:getRuntimeState", inputs),
   getConnectionState: () => ipcRenderer.invoke("connections:getState"),
@@ -25,7 +26,9 @@ contextBridge.exposeInMainWorld("desktopApi", {
   launchBuild: (input: BuildInput) => ipcRenderer.invoke("build:launch", input),
   cancelBuild: () => ipcRenderer.invoke("build:cancel"),
   getBuildStatus: () => ipcRenderer.invoke("build:getStatus"),
+  readClipboardText: () => Promise.resolve(clipboard.readText()),
   launchClaudeTerminal: (context?: LaunchClaudeContext) => ipcRenderer.invoke("chat:launchClaudeTerminal", context),
+  closeClaudeTerminal: () => ipcRenderer.invoke("chat:closeClaudeTerminal"),
   writeTerminal: (data: string) => ipcRenderer.invoke("chat:write", data),
   resizeTerminal: (cols: number, rows: number) => ipcRenderer.invoke("chat:resize", cols, rows),
   onTerminalData: (listener: (data: string) => void) => {

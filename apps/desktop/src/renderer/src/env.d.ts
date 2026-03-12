@@ -25,6 +25,7 @@ declare global {
       configureCodex(): Promise<ActionResult>;
       startShopifyAuth(storeDomain: string): Promise<ActionResult>;
       startClaudeAuth(): Promise<ActionResult>;
+      startCodexAuth(): Promise<ActionResult>;
       startFigmaAuth(provider: ProviderId): Promise<ActionResult>;
       getRuntimeState(inputs?: Partial<SetupInputState>): Promise<SetupSnapshot>;
       getConnectionState(): Promise<SetupInputState>;
@@ -37,7 +38,9 @@ declare global {
       launchBuild(input: BuildInput): Promise<BuildRunState>;
       cancelBuild(): Promise<BuildRunState | undefined>;
       getBuildStatus(): Promise<BuildRunState | undefined>;
+      readClipboardText(): Promise<string>;
       launchClaudeTerminal(context?: LaunchClaudeContext): Promise<boolean>;
+      closeClaudeTerminal(): Promise<boolean>;
       writeTerminal(data: string): Promise<boolean>;
       resizeTerminal(cols: number, rows: number): Promise<boolean>;
       onTerminalData(listener: (data: string) => void): () => void;

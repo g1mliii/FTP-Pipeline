@@ -21,6 +21,15 @@ export const parseClaudeAuthStatus = (stdout: string, stderr: string) => {
   }
 };
 
+export const parseCodexAuthStatus = (stdout: string, stderr: string) => {
+  const payload = `${stdout}\n${stderr}`.trim();
+  const lowered = payload.toLowerCase();
+  return {
+    loggedIn: lowered.includes("logged in") || lowered.includes("authenticated"),
+    detail: payload || "Authentication status unavailable."
+  } satisfies ParsedAuthStatus;
+};
+
 export interface ParsedPluginStatus {
   installed: boolean;
   enabled: boolean;
@@ -76,16 +85,19 @@ export const parseClaudeMcpStatus = (output: string, serverName: "figma" | "play
   }
 
   const connectedLine = matchingLines.find((line) => line.includes("✓ Connected"));
+  const authLine = matchingLines.find((line) => line.includes("Needs authentication"));
   if (connectedLine) {
     return {
       exists: true,
       connected: true,
       needsAuth: false,
-      detail: connectedLine
+      detail:
+        authLine && connectedLine.toLowerCase().includes("claude.ai")
+          ? `${connectedLine} A separate plugin entry also needs authentication, but the connected claude.ai MCP is the active one.`
+          : connectedLine
     };
   }
 
-  const authLine = matchingLines.find((line) => line.includes("Needs authentication"));
   if (authLine) {
     return {
       exists: true,
