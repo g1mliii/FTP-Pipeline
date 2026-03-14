@@ -11,7 +11,8 @@ import type {
   SecretId,
   SecretStatus,
   SetupInputState,
-  SetupSnapshot
+  SetupSnapshot,
+  UpdateStatus
 } from "../../shared/setup-types";
 
 declare global {
@@ -38,6 +39,8 @@ declare global {
       launchBuild(input: BuildInput): Promise<BuildRunState>;
       cancelBuild(): Promise<BuildRunState | undefined>;
       getBuildStatus(): Promise<BuildRunState | undefined>;
+      getUpdateStatus(): Promise<UpdateStatus>;
+      checkForUpdates(): Promise<UpdateStatus>;
       readClipboardText(): Promise<string>;
       writeClipboardText(text: string): Promise<void>;
       launchClaudeTerminal(context?: LaunchClaudeContext): Promise<boolean>;
@@ -49,6 +52,7 @@ declare global {
       onTerminalExit(listener: () => void): () => void;
       onBuildOutput(listener: (data: string) => void): () => void;
       onBuildStatus(listener: (state: BuildRunState) => void): () => void;
+      onUpdateStatus(listener: (status: UpdateStatus) => void): () => void;
     };
   }
 }

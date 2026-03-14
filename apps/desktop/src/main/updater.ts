@@ -1,48 +1,130 @@
 import { createRequire } from "node:module";
+import type { UpdateStatus } from "../shared/setup-types";
 
 const require = createRequire(import.meta.url);
 
 // Dynamically required so tree-shaking and conditional imports stay clean.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _autoUpdater: any = null;
+let autoUpdaterRef: any = null;
+let initialized = false;
+let currentStatus: UpdateStatus = { state: "idle" };
+const statusListeners = new Set<(status: UpdateStatus) => void>();
+
+const publishStatus = (status: UpdateStatus) => {
+  currentStatus = status;
+  for (const listener of statusListeners) {
+    listener(status);
+  }
+};
 
 const getAutoUpdater = () => {
-  if (!_autoUpdater) {
-    // electron-updater is a runtime dependency; access lazily so dev mode
-    // module resolution issues never crash the app.
+  if (!autoUpdaterRef) {
     try {
-      _autoUpdater = require("electron-updater").autoUpdater;
+      autoUpdaterRef = require("electron-updater").autoUpdater;
     } catch {
       return null;
     }
   }
-  return _autoUpdater;
+  return autoUpdaterRef;
 };
 
-export const initAutoUpdater = (getMainWindow: () => Electron.BrowserWindow | null) => {
+export const getUpdateStatus = () => currentStatus;
+
+export const checkForUpdates = async () => {
+  const { app } = require("electron");
+
+  if (!app.isPackaged) {
+    const status = {
+      state: "unsupported",
+      message: "Updates are only available in packaged builds."
+    } satisfies UpdateStatus;
+    publishStatus(status);
+    return status;
+  }
+
+  const autoUpdater = getAutoUpdater();
+  if (!autoUpdater) {
+    const status = {
+      state: "error",
+      message: "electron-updater is unavailable in this build."
+    } satisfies UpdateStatus;
+    publishStatus(status);
+    return status;
+  }
+
+  publishStatus({ state: "checking" });
+
+  try {
+    await autoUpdater.checkForUpdates();
+    return currentStatus;
+  } catch {
+    const status = {
+      state: "error",
+      message: "Unable to check for updates right now."
+    } satisfies UpdateStatus;
+    publishStatus(status);
+    return status;
+  }
+};
+
+export const initAutoUpdater = (getMainWindow: () => Electron.BrowserWindow | null, onStatus?: (status: UpdateStatus) => void) => {
   const { app, dialog } = require("electron");
 
-  // Only run in a packaged build — in dev the updater cannot resolve a feed URL
-  // and would throw or log confusing errors.
-  if (!app.isPackaged) {
+  if (onStatus) {
+    statusListeners.add(onStatus);
+    onStatus(currentStatus);
+  }
+
+  if (!app.isPackaged || initialized) {
     return;
   }
 
-  const au = getAutoUpdater();
-  if (!au) return;
+  const autoUpdater = getAutoUpdater();
+  if (!autoUpdater) return;
+  initialized = true;
 
-  // Keep the updater completely silent in logs.
-  au.logger = null;
+  autoUpdater.logger = null;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.allowPrerelease = false;
 
-  // Download automatically in the background; don't auto-quit on download.
-  au.autoDownload = true;
-  au.autoInstallOnAppQuit = false;
-  au.allowPrerelease = false;
+  autoUpdater.on("checking-for-update", () => {
+    publishStatus({ state: "checking" });
+  });
 
-  // When a newer version has been fully downloaded, prompt the user once.
-  au.on("update-downloaded", () => {
+  autoUpdater.on("update-available", (info: { version?: string }) => {
+    publishStatus({
+      state: "available",
+      version: info?.version,
+      message: info?.version ? `Version ${info.version} is downloading in the background.` : "A new version is downloading in the background."
+    });
+  });
+
+  autoUpdater.on("download-progress", (progress: { percent?: number }) => {
+    const percent = typeof progress?.percent === "number" ? Math.round(progress.percent) : null;
+    publishStatus({
+      state: "downloading",
+      message: percent === null ? "Downloading update…" : `Downloading update… ${percent}%`
+    });
+  });
+
+  autoUpdater.on("update-not-available", (info: { version?: string }) => {
+    publishStatus({
+      state: "up-to-date",
+      version: info?.version ?? app.getVersion(),
+      message: "You already have the latest version."
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info: { version?: string }) => {
+    publishStatus({
+      state: "downloaded",
+      version: info?.version,
+      message: info?.version ? `Version ${info.version} is ready to install.` : "An update is ready to install."
+    });
+
     const window = getMainWindow();
-    dialog
+    void dialog
       .showMessageBox(window ?? undefined, {
         type: "info",
         title: "Update Ready",
@@ -52,20 +134,22 @@ export const initAutoUpdater = (getMainWindow: () => Electron.BrowserWindow | nu
         defaultId: 0,
         cancelId: 1
       })
-      .then(({ response }) => {
+      .then(({ response }: { response: number }) => {
         if (response === 0) {
-          au.quitAndInstall(false, true);
+          autoUpdater.quitAndInstall(false, true);
         }
       })
       .catch(() => {});
   });
 
-  // Swallow every error silently — no releases yet, network down, unsigned build,
-  // version already current — none of these should produce visible errors.
-  au.on("error", () => {});
+  autoUpdater.on("error", () => {
+    publishStatus({
+      state: "error",
+      message: "Unable to reach the update service."
+    });
+  });
 
-  // Check after a short delay so the window is visible before any update dialog.
   setTimeout(() => {
-    au.checkForUpdates().catch(() => {});
+    void checkForUpdates();
   }, 5_000);
 };

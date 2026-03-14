@@ -33,7 +33,12 @@
       "Bash(shopify auth:*)",
       "Bash(shopify:*)",
       "Bash(kill:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(security find-identity:*)",
+      "Bash(gh auth:*)",
+      "Bash(security find-generic-password:*)",
+      "Bash(security dump-keychain:*)",
+      "Bash(source:*)"
     ]
   }
 }

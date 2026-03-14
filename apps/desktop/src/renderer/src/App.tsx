@@ -10,6 +10,10 @@ import { useDesktopController } from "./hooks/useDesktopController";
 
 function App() {
   const controller = useDesktopController();
+  const updateMessage =
+    controller.updateStatus.state === "idle"
+      ? "Automatic updates run in packaged builds."
+      : controller.updateStatus.message ?? `Update status: ${controller.updateStatus.state}.`;
   const currentStep = useMemo(
     () => controller.steps.find((item) => item.id === controller.activeStep),
     [controller.activeStep, controller.steps]
@@ -54,6 +58,9 @@ function App() {
             <div className="utility-copy">
               <p className="eyebrow">Workspace tools</p>
               <p>Refresh checks or back up the local config before you run the build.</p>
+              <p className="utility-status" role="status">
+                {updateMessage}
+              </p>
             </div>
             <div className="button-row">
               <button
@@ -71,6 +78,14 @@ function App() {
                 onClick={() => void controller.runAction("backup", () => window.desktopApi.backupConfigs())}
               >
                 Back Up Configs
+              </button>
+              <button
+                className="button button-secondary button-toolbar"
+                type="button"
+                disabled={controller.updateCheckBusy}
+                onClick={() => void controller.checkForUpdates()}
+              >
+                {controller.updateCheckBusy ? "Checking…" : "Check for Updates"}
               </button>
             </div>
           </div>

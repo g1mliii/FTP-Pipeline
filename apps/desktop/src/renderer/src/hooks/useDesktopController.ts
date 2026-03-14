@@ -1,5 +1,5 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import type { ActionResult, BackupReport, BuildDraft, BuildRunState, LaunchClaudeContext, ProviderId, SecretStatus, SetupSnapshot, SetupStepId } from "../../../shared/setup-types";
+import type { ActionResult, BackupReport, BuildDraft, BuildRunState, LaunchClaudeContext, ProviderId, SecretStatus, SetupSnapshot, SetupStepId, UpdateStatus } from "../../../shared/setup-types";
 import { buildClaudePrompt, isValidDesignSlug, isValidFigmaUrl, isValidStoreDomain, normalizeStoreDomain, sanitizeDesignSlug, suggestDesignSlug } from "../../../shared/build-utils";
 import { appendBuildLogChunk, emptyBuildLogBuffer } from "../lib/log-buffer";
 import { stepChecks, steps } from "../lib/steps";
@@ -75,6 +75,8 @@ export function useDesktopController() {
   const [terminalLaunchNonce, setTerminalLaunchNonce] = useState(0);
   const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null);
   const [buildLogBuffer, setBuildLogBuffer] = useState(emptyBuildLogBuffer);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: "idle" });
+  const [updateCheckBusy, setUpdateCheckBusy] = useState(false);
   const storeDomainRef = useRef<HTMLInputElement | null>(null);
   const figmaUrlRef = useRef<HTMLInputElement | null>(null);
   const designSlugRef = useRef<HTMLInputElement | null>(null);
@@ -329,6 +331,16 @@ export function useDesktopController() {
     }
   };
 
+  const checkForUpdates = async () => {
+    setUpdateCheckBusy(true);
+    try {
+      const nextStatus = await window.desktopApi.checkForUpdates();
+      setUpdateStatus(nextStatus);
+    } finally {
+      setUpdateCheckBusy(false);
+    }
+  };
+
   const toggleClaudeTerminal = async () => {
     if (terminalVisible) {
       setTerminalReady(false);
@@ -367,14 +379,16 @@ export function useDesktopController() {
 
     const bootstrap = async () => {
       try {
-        const [bootstrapSnapshot, nextDraft, nextBuildState] = await Promise.all([
+        const [bootstrapSnapshot, nextDraft, nextBuildState, nextUpdateStatus] = await Promise.all([
           window.desktopApi.getBootstrapState(),
           window.desktopApi.getBuildDraft(),
-          window.desktopApi.getBuildStatus()
+          window.desktopApi.getBuildStatus(),
+          window.desktopApi.getUpdateStatus()
         ]);
 
         if (!cancelled) {
           syncState(bootstrapSnapshot, nextDraft, nextBuildState, { syncInputs: true });
+          setUpdateStatus(nextUpdateStatus);
         }
       } finally {
         if (!cancelled) {
@@ -427,10 +441,17 @@ export function useDesktopController() {
     const offBuildStatus = window.desktopApi.onBuildStatus((nextState) => {
       startTransition(() => setBuildState(nextState));
     });
+    const offUpdateStatus = window.desktopApi.onUpdateStatus((nextStatus) => {
+      setUpdateStatus(nextStatus);
+      if (nextStatus.state !== "checking") {
+        setUpdateCheckBusy(false);
+      }
+    });
 
     return () => {
       offBuildOutput();
       offBuildStatus();
+      offUpdateStatus();
     };
   }, []);
 
@@ -511,6 +532,9 @@ export function useDesktopController() {
     terminalVisible,
     terminalLaunchContext,
     terminalLaunchNonce,
+    updateCheckBusy,
+    updateStatus,
+    checkForUpdates,
     handleTerminalExit: () => {
       setTerminalReady(false);
       setTerminalVisible(false);

@@ -84,6 +84,7 @@ Useful desktop workspace commands:
 - `npm run desktop:pack`
 - `npm run desktop:dist:win`
 - `npm run desktop:dist:mac`
+- `npm run desktop:release:mac`
 
 Installer notes:
 
@@ -91,6 +92,8 @@ Installer notes:
 - on first launch, the packaged app copies that workspace into its app data directory so scripts and local skill docs live in a writable location
 - Windows installers are built as one-click NSIS `.exe` packages
 - macOS installers are configured as `.dmg` builds and should be generated on macOS
+- macOS release builds also generate `.zip` artifacts plus `latest-mac.yml` so `electron-updater` can download updates from GitHub Releases
+- Electron Builder signs with the local Developer ID identity, enables hardened runtime, and notarizes automatically when Apple notarization credentials are available in the shell environment
 
 ## Design Folder Convention
 
@@ -238,6 +241,19 @@ On macOS, build the DMG with:
 ```powershell
 npm run desktop:dist:mac
 ```
+
+To build and publish the macOS release assets to GitHub Releases with `gh`:
+
+```powershell
+npm run desktop:release:mac
+```
+
+If you only want the build artifacts locally, use `npm run desktop:dist:mac`.
+If you want notarization, make sure one supported Apple credential set is available in the shell before building:
+
+- `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`
+- `APPLE_API_KEY`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER`
+- `APPLE_KEYCHAIN_PROFILE` with optional `APPLE_KEYCHAIN`
 
 If you are using raw Figma API fetches, set:
 

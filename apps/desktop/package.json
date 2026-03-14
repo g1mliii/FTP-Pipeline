@@ -19,7 +19,9 @@
     "pack": "npm run prepare:dist && npm run build && electron-builder --dir",
     "dist": "npm run prepare:dist && npm run build && electron-builder",
     "dist:win": "npm run prepare:dist && npm run build && electron-builder --win nsis",
-    "dist:mac": "npm run prepare:dist && npm run build && electron-builder --mac dmg"
+    "dist:mac": "npm run prepare:dist && npm run build && electron-builder --mac",
+    "dist:mac:publish": "npm run prepare:dist && npm run build && electron-builder --mac --publish always",
+    "release:mac": "npm run dist:mac && node scripts/publish-github-release.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
@@ -52,7 +54,7 @@
       "owner": "g1mliii",
       "repo": "FTP-Pipeline"
     },
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "Figma-Shopify-AutoBuild-${version}-${os}-${arch}.${ext}",
     "asar": true,
     "asarUnpack": [
       "node_modules/**/*.node"
@@ -96,9 +98,22 @@
     "mac": {
       "icon": "icon.icns",
       "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+      "notarize": true,
       "target": [
         {
           "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
           "arch": [
             "x64",
             "arm64"
@@ -107,7 +122,7 @@
       ]
     },
     "dmg": {
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "artifactName": "Figma-Shopify-AutoBuild-${version}-${arch}.${ext}",
       "window": {
         "width": 540,
         "height": 400

@@ -4,7 +4,7 @@ import type { BrowserWindow as ElectronBrowserWindow, Event as ElectronEvent, Ip
 import { ClaudeBuildManager } from "./build/claude-build";
 import { SetupService } from "./setup/service";
 import { ClaudeTerminalManager } from "./terminal/claude-terminal";
-import { initAutoUpdater } from "./updater";
+import { checkForUpdates, getUpdateStatus, initAutoUpdater } from "./updater";
 import type { BuildInput, LaunchClaudeContext, ProviderId, SecretId, SetupInputState } from "../shared/setup-types";
 
 const require = createRequire(import.meta.url);
@@ -234,6 +234,14 @@ app.whenReady().then(async () => {
     assertTrustedEvent(event);
     return buildManager?.getState();
   });
+  handleIpc("app:getUpdateStatus", async (event) => {
+    assertTrustedEvent(event);
+    return getUpdateStatus();
+  });
+  handleIpc("app:checkForUpdates", async (event) => {
+    assertTrustedEvent(event);
+    return checkForUpdates();
+  });
   handleIpc("chat:launchClaudeTerminal", async (event, context?: LaunchClaudeContext) => {
     assertTrustedEvent(event);
     const terminalContext: LaunchClaudeContext = {
@@ -272,7 +280,9 @@ app.whenReady().then(async () => {
   });
 
   await createWindow();
-  initAutoUpdater(() => mainWindow);
+  initAutoUpdater(() => mainWindow, (status) => {
+    mainWindow?.webContents.send("app:updateStatus", status);
+  });
 
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {

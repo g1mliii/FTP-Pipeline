@@ -306,6 +306,10 @@ pre {
   line-height: 1.45;
 }
 
+.utility-status {
+  max-width: 36rem;
+}
+
 .hero-panel,
 .panel {
   background: var(--surface);

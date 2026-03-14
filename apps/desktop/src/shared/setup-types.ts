@@ -120,3 +120,11 @@ export interface BuildRunState {
   exitCode?: number | null;
   summary?: string;
 }
+
+export type UpdateState = "idle" | "checking" | "available" | "downloading" | "downloaded" | "up-to-date" | "error" | "unsupported";
+
+export interface UpdateStatus {
+  state: UpdateState;
+  version?: string;
+  message?: string;
+}

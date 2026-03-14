@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import type { BuildInput, BuildRunState, LaunchClaudeContext, ProviderId, SecretId, SetupInputState } from "../shared/setup-types";
+import type { BuildInput, BuildRunState, LaunchClaudeContext, ProviderId, SecretId, SetupInputState, UpdateStatus } from "../shared/setup-types";
 
 const require = createRequire(import.meta.url);
 const { clipboard, contextBridge, ipcRenderer } = require("electron");
@@ -26,6 +26,8 @@ contextBridge.exposeInMainWorld("desktopApi", {
   launchBuild: (input: BuildInput) => ipcRenderer.invoke("build:launch", input),
   cancelBuild: () => ipcRenderer.invoke("build:cancel"),
   getBuildStatus: () => ipcRenderer.invoke("build:getStatus"),
+  getUpdateStatus: () => ipcRenderer.invoke("app:getUpdateStatus"),
+  checkForUpdates: () => ipcRenderer.invoke("app:checkForUpdates"),
   readClipboardText: () => Promise.resolve(clipboard.readText()),
   writeClipboardText: (text: string) => Promise.resolve(clipboard.writeText(text)),
   launchClaudeTerminal: (context?: LaunchClaudeContext) => ipcRenderer.invoke("chat:launchClaudeTerminal", context),
@@ -56,5 +58,10 @@ contextBridge.exposeInMainWorld("desktopApi", {
     const wrapped = (_event: Electron.IpcRendererEvent, state: BuildRunState) => listener(state);
     ipcRenderer.on("build:status", wrapped);
     return () => ipcRenderer.removeListener("build:status", wrapped);
+  },
+  onUpdateStatus: (listener: (status: UpdateStatus) => void) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, status: UpdateStatus) => listener(status);
+    ipcRenderer.on("app:updateStatus", wrapped);
+    return () => ipcRenderer.removeListener("app:updateStatus", wrapped);
   }
 });
