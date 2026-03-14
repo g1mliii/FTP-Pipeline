@@ -1,3 +1,5 @@
+import { getLoginShellPath } from "../setup/commands";
+
 const OPTIONAL_ENV_KEYS = [
   "APPDATA",
   "COMSPEC",
@@ -35,6 +37,11 @@ export const createChildProcessEnv = (overrides: NodeJS.ProcessEnv = {}) => {
   }
 
   env.PWD = process.cwd();
+
+  if (process.platform !== "win32") {
+    env.PATH = getLoginShellPath();
+  }
+
   return {
     ...env,
     ...overrides

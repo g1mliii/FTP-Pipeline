@@ -10,7 +10,30 @@
       "Bash(which shopify:*)",
       "Bash(shopify theme:*)",
       "mcp__plugin_playwright_playwright__browser_fill_form",
-      "mcp__plugin_playwright_playwright__browser_click"
+      "mcp__plugin_playwright_playwright__browser_click",
+      "Bash(npm run build:icons:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run desktop:dev:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run desktop:dist:mac:*)",
+      "Bash(npm run dist:mac:*)",
+      "Bash(brew search:*)",
+      "Bash(brew tap:*)",
+      "Bash(npm run build:*)",
+      "Bash(claude mcp:*)",
+      "Bash(claude plugin list:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "Read(//Users/subaigsuri/.local/share/claude/versions/**)",
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(timeout:*)",
+      "Bash(gtimeout:*)",
+      "Bash(shopify auth:*)",
+      "Bash(shopify:*)",
+      "Bash(kill:*)",
+      "Bash(git remote:*)"
     ]
   }
 }

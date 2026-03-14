@@ -18,7 +18,7 @@ import type {
 } from "../../shared/setup-types";
 import { backupTargets, ensureDirectoryCopy } from "../../shared/config-utils";
 import { parseClaudeAuthStatus, parseClaudeMcpStatus, parseClaudePluginList, parseCodexAuthStatus, parseCodexMcpGet, parseShopifyVersion } from "../../shared/parsers";
-import { detectFirstUrl, runCommand, runNpmGlobalInstall, runShopifyCommand } from "./commands";
+import { detectFirstUrl, getLoginShellPath, runCommand, runCommandStreamUrlAndWait, runNpmGlobalInstall, runShopifyCommand } from "./commands";
 import { SecretStore } from "./secret-store";
 import { findWorkspaceRoot, getUserPaths } from "./paths";
 
@@ -206,7 +206,11 @@ const runShopifyInstall = async (workspaceRoot: string) => {
   }
 
   if (process.platform === "darwin") {
-    return runCommand("brew", ["install", "shopify-cli"], { cwd: workspaceRoot });
+    const tapResult = await runCommand("brew", ["tap", "shopify/shopify"], { cwd: workspaceRoot });
+    if (!tapResult.ok && !tapResult.stdout.includes("already tapped") && !tapResult.stderr.includes("already tapped")) {
+      return tapResult;
+    }
+    return runCommand("brew", ["install", "shopify/shopify/shopify-cli"], { cwd: workspaceRoot });
   }
 
   return runNpmGlobalInstall("@shopify/cli", workspaceRoot);
@@ -320,7 +324,7 @@ export class SetupService {
       ? Promise.resolve(check("shopifyAuth", "action_required", "Enter a store domain to validate Shopify auth."))
       : !isValidStoreDomain(currentState.storeDomain)
         ? Promise.resolve(check("shopifyAuth", "action_required", "Store domain must be a valid *.myshopify.com hostname."))
-        : runShopifyCommand(["theme", "list", "--store", currentState.storeDomain, "--json"], this.workspaceRoot, STATUS_CHECK_TIMEOUT_MS).then(
+        : runShopifyCommand(["theme", "list", "-s", currentState.storeDomain, "--json"], this.workspaceRoot, STATUS_CHECK_TIMEOUT_MS * 3).then(
             (authOutcome) => {
               const failure = parseShopifyAuthFailure(currentState.storeDomain, authOutcome.stdout, authOutcome.stderr);
               return check(
@@ -748,7 +752,8 @@ export class SetupService {
       };
     }
 
-    const existingAuth = await runShopifyCommand(["theme", "list", "--store", trimmedDomain, "--json"], this.workspaceRoot, STATUS_CHECK_TIMEOUT_MS);
+    // Quick check — if already authenticated skip the login entirely.
+    const existingAuth = await runShopifyCommand(["theme", "list", "-s", trimmedDomain, "--json"], this.workspaceRoot, STATUS_CHECK_TIMEOUT_MS);
     if (existingAuth.ok) {
       return {
         ok: true,
@@ -768,30 +773,50 @@ export class SetupService {
       };
     }
 
-    const existingAuthOpenedBrowser = await maybeOpenAuthUrl(`${existingAuth.stdout}\n${existingAuth.stderr}`);
-    if (existingAuthOpenedBrowser) {
+    // shopify theme list outputs the device-code auth URL when not logged in, then
+    // continues polling until the user completes auth in the browser and the CLI
+    // receives the OAuth callback and saves the session. We open the URL immediately
+    // via shell.openExternal, then WAIT for the process to finish (up to 5 min) so
+    // that credentials are fully saved before we run the status check.
+    let urlOpened = false;
+    const authOutcome = await runCommandStreamUrlAndWait(
+      "shopify",
+      ["theme", "list", "-s", trimmedDomain, "--json"],
+      { cwd: this.workspaceRoot, timeoutMs: 5 * 60_000 },
+      (url) => {
+        if (isAllowedAuthUrl(url)) {
+          urlOpened = true;
+          shell.openExternal(url);
+        }
+      }
+    );
+
+    if (authOutcome.ok) {
       return {
         ok: true,
-        message: shopifyAuthPendingMessage(trimmedDomain),
-        outcome: existingAuth,
+        message: `Shopify CLI is now authenticated for ${trimmedDomain}.`,
+        outcome: authOutcome,
         snapshot: await this.runChecks({ storeDomain: trimmedDomain })
       };
     }
 
-    const outcome = await runShopifyCommand(["auth", "login", "--store", trimmedDomain], this.workspaceRoot);
-    const openedBrowser = await maybeOpenAuthUrl(`${outcome.stdout}\n${outcome.stderr}`);
-    const authFailure = parseShopifyAuthFailure(trimmedDomain, outcome.stdout, outcome.stderr);
+    // Process exited non-zero. If we opened a URL, the user may not have completed
+    // auth yet — surface that. Otherwise report the failure.
+    if (urlOpened) {
+      return {
+        ok: false,
+        message: `Browser opened for Shopify auth but login did not complete. Check the browser tab and try again.`,
+        outcome: authOutcome,
+        snapshot: await this.runChecks({ storeDomain: trimmedDomain })
+      };
+    }
 
     return {
-      ok: outcome.ok || openedBrowser,
-      message: outcome.ok
-        ? `Shopify auth finished for ${trimmedDomain}.`
-        : openedBrowser
-          ? shopifyAuthPendingMessage(trimmedDomain)
-          : authFailure
-            ? authFailure.message
-          : `Shopify auth requires completion for ${trimmedDomain}.`,
-      outcome,
+      ok: false,
+      message: authOutcome.stderr?.includes("timed out")
+        ? "Could not get a Shopify auth URL within 15 seconds. Make sure Shopify CLI is installed and the store domain is correct."
+        : authOutcome.stderr || "Shopify auth failed. Make sure the store domain is correct and Shopify CLI is installed.",
+      outcome: authOutcome,
       snapshot: await this.runChecks({ storeDomain: trimmedDomain })
     };
   }
@@ -860,6 +885,15 @@ export class SetupService {
         message: "Claude Figma setup is already ready.",
         outcome: currentMcpState,
         snapshot: await this.runChecks()
+      };
+    }
+
+    if (figmaMcp.exists && figmaMcp.needsAuth) {
+      const snapshot = await this.runChecks();
+      return {
+        ok: true,
+        message: "Figma needs authentication inside Claude. Go to Step 4, launch the Claude terminal, type /mcp, select figma, then choose Authenticate. Return here and click Refresh Checks when done.",
+        snapshot
       };
     }
 

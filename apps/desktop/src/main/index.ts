@@ -4,6 +4,7 @@ import type { BrowserWindow as ElectronBrowserWindow, Event as ElectronEvent, Ip
 import { ClaudeBuildManager } from "./build/claude-build";
 import { SetupService } from "./setup/service";
 import { ClaudeTerminalManager } from "./terminal/claude-terminal";
+import { initAutoUpdater } from "./updater";
 import type { BuildInput, LaunchClaudeContext, ProviderId, SecretId, SetupInputState } from "../shared/setup-types";
 
 const require = createRequire(import.meta.url);
@@ -271,6 +272,7 @@ app.whenReady().then(async () => {
   });
 
   await createWindow();
+  initAutoUpdater(() => mainWindow);
 
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {

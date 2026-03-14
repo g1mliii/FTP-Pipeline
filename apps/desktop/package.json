@@ -8,6 +8,7 @@
   "author": "subai",
   "productName": "Figma Shopify AutoBuild",
   "scripts": {
+    "postinstall": "node scripts/fix-node-pty-permissions.mjs",
     "dev": "node scripts/run-electron-vite.mjs dev",
     "build": "node scripts/run-electron-vite.mjs build",
     "preview": "node scripts/run-electron-vite.mjs preview",
@@ -23,6 +24,7 @@
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
+    "electron-updater": "^6.8.3",
     "keytar": "^7.9.0",
     "node-pty": "^1.0.0",
     "react": "^19.1.1",
@@ -45,6 +47,11 @@
   },
   "build": {
     "appId": "com.subai.figma-shopify.autobuild",
+    "publish": {
+      "provider": "github",
+      "owner": "g1mliii",
+      "repo": "FTP-Pipeline"
+    },
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "asar": true,
     "asarUnpack": [
