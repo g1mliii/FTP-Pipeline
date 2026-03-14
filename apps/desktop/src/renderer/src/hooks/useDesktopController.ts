@@ -1,6 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import type { ActionResult, BackupReport, BuildDraft, BuildRunState, ProviderId, SecretStatus, SetupSnapshot, SetupStepId } from "../../../shared/setup-types";
-import { isValidDesignSlug, isValidFigmaUrl, isValidStoreDomain, normalizeStoreDomain, sanitizeDesignSlug, suggestDesignSlug } from "../../../shared/build-utils";
+import type { ActionResult, BackupReport, BuildDraft, BuildRunState, LaunchClaudeContext, ProviderId, SecretStatus, SetupSnapshot, SetupStepId } from "../../../shared/setup-types";
+import { buildClaudePrompt, isValidDesignSlug, isValidFigmaUrl, isValidStoreDomain, normalizeStoreDomain, sanitizeDesignSlug, suggestDesignSlug } from "../../../shared/build-utils";
 import { appendBuildLogChunk, emptyBuildLogBuffer } from "../lib/log-buffer";
 import { stepChecks, steps } from "../lib/steps";
 
@@ -71,6 +71,9 @@ export function useDesktopController() {
   const [result, setResult] = useState<ActionResult | BackupReport | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
   const [terminalVisible, setTerminalVisible] = useState(false);
+  const [terminalLaunchContext, setTerminalLaunchContext] = useState<LaunchClaudeContext | undefined>(undefined);
+  const [terminalLaunchNonce, setTerminalLaunchNonce] = useState(0);
+  const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null);
   const [buildLogBuffer, setBuildLogBuffer] = useState(emptyBuildLogBuffer);
   const storeDomainRef = useRef<HTMLInputElement | null>(null);
   const figmaUrlRef = useRef<HTMLInputElement | null>(null);
@@ -173,6 +176,12 @@ export function useDesktopController() {
     return currentSlug;
   };
 
+  const createTerminalContext = (overrides?: Partial<LaunchClaudeContext>): LaunchClaudeContext => ({
+    storeDomain: overrides?.storeDomain ?? storeDomain,
+    designSlug: overrides?.designSlug ?? sanitizeDesignSlug(designSlugDraft),
+    useStoredBuildSecrets: overrides?.useStoredBuildSecrets ?? true
+  });
+
   const runAction = async <T extends ActionResult | BackupReport>(
     label: string,
     action: () => Promise<T>,
@@ -246,9 +255,11 @@ export function useDesktopController() {
     setBuildLogBuffer(emptyBuildLogBuffer());
     try {
       const normalizedSlug = sanitizeDesignSlug(designSlugDraft);
+      const normalizedFigmaUrl = figmaUrl.trim();
+      const normalizedStoreDomain = normalizeStoreDomain(storeDomain);
       const saveResult = await window.desktopApi.saveConnectionState({
-        storeDomain,
-        figmaUrl,
+        storeDomain: normalizedStoreDomain,
+        figmaUrl: normalizedFigmaUrl,
         designSlugDraft: normalizedSlug
       });
       setResult(saveResult);
@@ -259,12 +270,33 @@ export function useDesktopController() {
       }
 
       const nextDraft = await window.desktopApi.getBuildDraft();
-      const launchState = await window.desktopApi.launchBuild({
-        storeDomain,
-        figmaUrl,
+      const prompt = buildClaudePrompt({
+        figmaUrl: normalizedFigmaUrl,
+        storeDomain: normalizedStoreDomain,
         designSlug: normalizedSlug
       });
-      syncState(saveResult.snapshot, nextDraft, launchState, { syncInputs: true });
+      syncState(
+        saveResult.snapshot,
+        nextDraft,
+        {
+          status: "running",
+          command: "Claude terminal build session",
+          startedAt: new Date().toISOString(),
+          summary: `Build prompt sent to the Claude terminal for ${normalizedSlug}.`
+        },
+        { syncInputs: true }
+      );
+      setTerminalLaunchContext(
+        createTerminalContext({
+          storeDomain: normalizedStoreDomain,
+          designSlug: normalizedSlug,
+          useStoredBuildSecrets: true
+        })
+      );
+      setPendingTerminalCommand(`${prompt}\r`);
+      setTerminalReady(false);
+      setTerminalVisible(true);
+      setTerminalLaunchNonce((current) => current + 1);
       setActiveStep("build");
     } catch (error) {
       setBuildState({
@@ -279,8 +311,20 @@ export function useDesktopController() {
   };
 
   const cancelBuild = async () => {
+    if (buildState.status === "running") {
+      await window.desktopApi.writeTerminal("\u0003");
+      startTransition(() =>
+        setBuildState((current) => ({
+          ...current,
+          status: "cancelled",
+          finishedAt: new Date().toISOString(),
+          summary: "Build interrupted in the Claude terminal."
+        }))
+      );
+    }
+
     const nextState = await window.desktopApi.cancelBuild();
-    if (nextState) {
+    if (nextState && nextState.status !== "idle") {
       startTransition(() => setBuildState(nextState));
     }
   };
@@ -289,10 +333,13 @@ export function useDesktopController() {
     if (terminalVisible) {
       setTerminalReady(false);
       setTerminalVisible(false);
+      setPendingTerminalCommand(null);
       void window.desktopApi.closeClaudeTerminal();
       return;
     }
 
+    setTerminalLaunchContext(createTerminalContext());
+    setTerminalLaunchNonce((current) => current + 1);
     setTerminalVisible(true);
   };
 
@@ -363,6 +410,15 @@ export function useDesktopController() {
   }, [snapshot]);
 
   useEffect(() => {
+    if (!terminalReady || !pendingTerminalCommand) {
+      return;
+    }
+
+    void window.desktopApi.writeTerminal(pendingTerminalCommand);
+    setPendingTerminalCommand(null);
+  }, [pendingTerminalCommand, terminalReady]);
+
+  useEffect(() => {
     const offBuildOutput = window.desktopApi.onBuildOutput((data) => {
       startTransition(() => {
         setBuildLogBuffer((current) => appendBuildLogChunk(current, data));
@@ -421,6 +477,7 @@ export function useDesktopController() {
     result,
     resultIsError,
     resultMessage,
+    clearResult: () => setResult(null),
     runAction,
     saveConnections,
     secretStatuses,
@@ -452,9 +509,22 @@ export function useDesktopController() {
     storefrontPasswordStatus,
     terminalReady,
     terminalVisible,
+    terminalLaunchContext,
+    terminalLaunchNonce,
     handleTerminalExit: () => {
       setTerminalReady(false);
       setTerminalVisible(false);
+      setPendingTerminalCommand(null);
+      setBuildState((current) =>
+        current.status === "running"
+          ? {
+              ...current,
+              status: "cancelled",
+              finishedAt: new Date().toISOString(),
+              summary: "Claude terminal closed before the build finished."
+            }
+          : current
+      );
     },
     handleTerminalStarted: () => setTerminalReady(true)
   };

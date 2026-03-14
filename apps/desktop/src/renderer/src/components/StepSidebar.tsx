@@ -21,7 +21,7 @@ function StepSidebarComponent({ activeStep, completedSteps, onSelectStep, steps,
           AS
         </div>
         <div className="min-w-0">
-          <p className="eyebrow">Claude-First Wrapper</p>
+          <p className="eyebrow">Guided wrapper</p>
           <h1>Auto-Build Desktop</h1>
         </div>
       </div>

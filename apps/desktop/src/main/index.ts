@@ -235,7 +235,23 @@ app.whenReady().then(async () => {
   });
   handleIpc("chat:launchClaudeTerminal", async (event, context?: LaunchClaudeContext) => {
     assertTrustedEvent(event);
-    terminalManager?.launch({ storeDomain: readOptionalString(context?.storeDomain) });
+    const terminalContext: LaunchClaudeContext = {
+      storeDomain: readOptionalString(context?.storeDomain),
+      designSlug: readOptionalString(context?.designSlug, MAX_SLUG_INPUT, "designSlug")
+    };
+
+    if (context?.useStoredBuildSecrets) {
+      const figmaToken = await setupService.getSecretValue("figmaToken");
+      const storefrontPassword = await setupService.getSecretValue("shopifyStorefrontPassword");
+      if (figmaToken) {
+        terminalContext.figmaToken = clampString(figmaToken, MAX_SECRET_INPUT, "figmaToken");
+      }
+      if (storefrontPassword) {
+        terminalContext.storefrontPassword = clampString(storefrontPassword, MAX_SECRET_INPUT, "storefrontPassword");
+      }
+    }
+
+    terminalManager?.launch(terminalContext);
     return true;
   });
   handleIpc("chat:closeClaudeTerminal", async (event) => {

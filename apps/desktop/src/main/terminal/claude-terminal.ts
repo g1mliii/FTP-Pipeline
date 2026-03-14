@@ -7,6 +7,7 @@ import { createChildProcessEnv } from "../security/child-env";
 import type { LaunchClaudeContext } from "../../shared/setup-types";
 
 const MAX_TERMINAL_CHUNK = 4096;
+const WINDOWS_SHELL = "powershell.exe";
 
 const resolveClaudeExecutable = () => {
   if (process.platform !== "win32") {
@@ -44,6 +45,14 @@ const resolveClaudeExecutable = () => {
   return "claude";
 };
 
+const toPowerShellCommand = (command: string) => {
+  if (!command.includes("\\") && !command.includes("/")) {
+    return command;
+  }
+
+  return `& '${command.replace(/'/g, "''")}'`;
+};
+
 export class ClaudeTerminalManager {
   private terminal: IPty | null = null;
 
@@ -69,15 +78,47 @@ export class ClaudeTerminalManager {
     if (context?.storeDomain) {
       env.SHOPIFY_STORE = context.storeDomain;
     }
+    if (context?.designSlug) {
+      env.DESIGN_SLUG = context.designSlug;
+    }
+    if (typeof context?.figmaToken === "string") {
+      env.FIGMA_TOKEN = context.figmaToken;
+    }
+    if (typeof context?.storefrontPassword === "string") {
+      env.SHOPIFY_STOREFRONT_PASSWORD = context.storefrontPassword;
+    }
 
-    this.terminal = pty.spawn(resolveClaudeExecutable(), [], {
-      name: "xterm-color",
-      cwd: this.workspaceRoot,
-      env: env as Record<string, string>,
-      cols: 120,
-      rows: 32,
-      useConpty: process.platform === "win32"
-    });
+    try {
+      if (process.platform === "win32") {
+        this.terminal = pty.spawn(
+          WINDOWS_SHELL,
+          ["-NoLogo", "-NoExit", "-Command", toPowerShellCommand(resolveClaudeExecutable())],
+          {
+            name: "xterm-color",
+            cwd: this.workspaceRoot,
+            env: env as Record<string, string>,
+            cols: 120,
+            rows: 32,
+            useConpty: false
+          }
+        );
+        this.send("chat:system", "Claude terminal started through Windows PowerShell for stability.");
+      } else {
+        this.terminal = pty.spawn(resolveClaudeExecutable(), [], {
+          name: "xterm-color",
+          cwd: this.workspaceRoot,
+          env: env as Record<string, string>,
+          cols: 120,
+          rows: 32,
+          useConpty: false
+        });
+      }
+    } catch (error) {
+      this.terminal = null;
+      const message = error instanceof Error ? error.message : "Claude terminal failed to start.";
+      this.send("chat:system", message);
+      throw error;
+    }
 
     this.terminal.onData((data) => {
       this.send("chat:data", data);

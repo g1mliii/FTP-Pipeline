@@ -1,0 +1,146 @@
+{
+  "sections": [
+    {
+      "id": "product-hero",
+      "type": "product-hero",
+      "settings": {
+        "collection_label": "Tech Collection",
+        "product_title": "iPhone Art Display",
+        "price": "Rp. 6.500.000",
+        "description": "Every piece of tech is also a work of art. This handcrafted display showcases the intricate beauty of iPhone technology, perfectly preserved in crystal-clear resin with subtle LED illumination.",
+        "features": [
+          {
+            "icon": "palette",
+            "label": "Innovative Design",
+            "text": "Suspended tech components in high-clarity resin showcase the hidden artistry of modern engineering"
+          },
+          {
+            "icon": "wrench",
+            "label": "Handcrafted Excellence",
+            "text": "Each piece is meticulously assembled and sealed with precision"
+          },
+          {
+            "icon": "lightbulb",
+            "label": "Premium Lighting",
+            "text": "Integrated LED system with custom wooden base for ambient display"
+          }
+        ],
+        "add_to_cart_text": "Add to Cart",
+        "buy_now_text": "Buy it now",
+        "collapsibles": [
+          { "title": "Shipping Information", "content": "Free shipping on all orders. Delivery within 5-7 business days." },
+          { "title": "Shipping & Returns", "content": "30-day return policy. Items must be in original condition." },
+          { "title": "Customer Support", "content": "24/7 customer support available via email and chat." }
+        ]
+      },
+      "images": [
+        "product-hero-1.png",
+        "product-hero-2.png",
+        "product-hero-3.png"
+      ]
+    },
+    {
+      "id": "features",
+      "type": "features-bar",
+      "settings": {
+        "bg_color": "#f9fafb"
+      },
+      "blocks": [
+        { "icon": "award", "title": "Quality Focused", "description": "Crafted with precision and attention to detail for lasting beauty" },
+        { "icon": "package", "title": "Safe Packing", "description": "Every piece is securely packaged for safe arrival" },
+        { "icon": "zap", "title": "LED Lighting", "description": "Built-in premium LED system for perfect illumination" },
+        { "icon": "truck", "title": "Free Shipping", "description": "Complimentary shipping on all domestic orders" }
+      ]
+    },
+    {
+      "id": "vision-chapter",
+      "type": "vision-chapter",
+      "settings": {
+        "hero_label": "The Glass & Steel Revolution",
+        "hero_heading": "A Digital Exhibit of the iPhone 4 Legacy",
+        "hero_text": "A century from now, when historians trace the arc of human progress, they'll point to devices that changed everything. This is one of them. Preserved. Celebrated. Eternal.",
+        "ch1_label": "Chapter 1: The Vision",
+        "ch1_heading": "Steve Jobs' Masterpiece",
+        "ch1_text_1": "In his quest to precision and premium materials, Steve Jobs didn't just create a phone. He created the device that would redefine the form, inspiring art in his intended design for decades.",
+        "ch1_text_2": "The iPhone 4 revolutionized the world with its refined beauty and its innovative design. Every component tells a story of revolutionary innovation, now carefully revealed for the world to see.",
+        "ch2_label": "Chapter 2: The Deconstruction",
+        "ch2_heading": "The Evolution of Design",
+        "ch2_text_1": "Meticulously showcasing the intricate engineering. Every component tells a story of revolutionary innovation, now carefully revealed for eternity to cherish.",
+        "ch2_text_2": "What was hidden beneath glass and aluminum now stands revealed— the A4 processor, the Retina display controller, the revolutionary camera sensor. Each component preserved in crystal-clear resin, suspended in time like specimens in a museum of innovation.",
+        "ch3_label": "Chapter 3: The Artisanship",
+        "ch3_heading": "Beyond the Screen",
+        "ch3_text": "Our dedicated artisans painstakingly disassemble, clean, and meticulously position every component within a single, awe-inspiring display. It's not just preservation. It's through a piece of modern history—a tribute to what happens when technology meets art."
+      }
+    },
+    {
+      "id": "legacy",
+      "type": "legacy-section",
+      "settings": {
+        "label": "The Philosophy",
+        "heading": "Technology alone is not enough.",
+        "subtext": "It's technology married with the liberal arts, married with the humanities, that yields the results that make our hearts sing.",
+        "attribution": "— The ethos that defined a generation",
+        "pillars": [
+          { "title": "Innovation", "text": "Every detail of the iPhone 4 was obsessed over. Now, those details live forever in resin and light." },
+          { "title": "Craftsmanship", "text": "Each piece is assembled by hand with the same precision Jobs demanded in every product." },
+          { "title": "Legacy", "text": "More than a device. It's a monument to the moment technology became something beautiful." }
+        ],
+        "quote": "Design is not just what it looks like and feels like. Design is how it works.",
+        "quote_subtext": "This piece doesn't just celebrate how the iPhone looked. It celebrates how it changed everything.",
+        "cta_text": "Explore the Collection",
+        "cta_url": "/collections/all",
+        "final_text": "Own a piece of history. Own a work of art."
+      }
+    },
+    {
+      "id": "tech-vision",
+      "type": "tech-vision",
+      "settings": {
+        "badge_text": "Innovation Meets Art",
+        "heading_line1": "How We Brought",
+        "heading_line2": "Technology to Life",
+        "description": "Every piece tells a story of innovation. We carefully disassemble iconic devices, preserving each component before suspending them in crystal-clear resin. The result is a stunning display that transforms technology into timeless art.",
+        "steps": [
+          { "icon": "cpu", "title": "Precision Disassembly", "text": "Each device is carefully taken apart to preserve the integrity of every component" },
+          { "icon": "layers", "title": "Artistic Arrangement", "text": "Components are meticulously positioned to create a visually striking composition" },
+          { "icon": "sparkles", "title": "Resin Encapsulation", "text": "High-clarity resin seals and protects, creating a museum-quality display piece" }
+        ]
+      }
+    },
+    {
+      "id": "reviews",
+      "type": "reviews",
+      "settings": {
+        "heading": "From Our Community",
+        "review_count": "2,846 reviews"
+      },
+      "blocks": [
+        { "name": "Michael Chen", "rating": 5, "comment": "Absolutely stunning piece! The craftsmanship is incredible and it looks even better in person. Perfect conversation starter for my office." },
+        { "name": "Sarah Johnson", "rating": 5, "comment": "As a tech enthusiast, this is the perfect blend of nostalgia and art. The LED lighting really makes it pop. Highly recommend!" },
+        { "name": "David Martinez", "rating": 5, "comment": "The attention to detail is remarkable. Shipped quickly and arrived perfectly packaged. Worth every penny!" },
+        { "name": "Emma Williams", "rating": 5, "comment": "Beautiful craftsmanship! This is more than just decor - it's a piece of history preserved in resin. Love it!" }
+      ]
+    },
+    {
+      "id": "faq",
+      "type": "faq",
+      "settings": {
+        "heading": "Frequently Asked Questions"
+      },
+      "blocks": [
+        { "question": "What materials are in the bundle?", "answer": "Each piece is crafted using genuine device components, premium optical-grade resin, and includes an LED lighting system with a custom wooden base." },
+        { "question": "Is the lamp dimmable?", "answer": "Yes! All our pieces feature integrated dimmable LED lighting, allowing you to adjust the brightness to your preference." },
+        { "question": "How do I care for and maintain my art piece?", "answer": "Simply dust with a soft, dry cloth. Avoid harsh chemicals or abrasive materials. The resin is UV-resistant and designed for long-lasting clarity." },
+        { "question": "What devices did you disassemble and include in the art?", "answer": "This piece features authentic iPhone components including the logic board, camera module, display assembly, and various internal components - all genuine parts." },
+        { "question": "Do you offer international shipping?", "answer": "Yes, we ship worldwide with secure packaging. International shipping rates are calculated at checkout based on your location." }
+      ]
+    },
+    {
+      "id": "instagram-gallery",
+      "type": "instagram-gallery",
+      "settings": {
+        "heading": "Catch us on Instagram for more"
+      }
+    }
+  ]
+}

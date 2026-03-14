@@ -105,27 +105,36 @@ describe("build helpers", () => {
   it("extracts the figma file key from design urls", () => {
     expect(extractFigmaFileKey("https://www.figma.com/design/AbCd1234/My-File?node-id=1-2")).toBe("AbCd1234");
     expect(isValidFigmaUrl("https://www.figma.com/design/AbCd1234/My-File?node-id=1-2")).toBe(true);
+    expect(extractFigmaFileKey("https://www.figma.com/make/qLS7R5LvRdXoveRu20yfWR/Redesign-landing-page")).toBe(
+      "qLS7R5LvRdXoveRu20yfWR"
+    );
+    expect(isValidFigmaUrl("https://www.figma.com/make/qLS7R5LvRdXoveRu20yfWR/Redesign-landing-page")).toBe(true);
     expect(isValidStoreDomain("store.myshopify.com")).toBe(true);
   });
 
   it("suggests a stable slug from figma urls", () => {
-    expect(suggestDesignSlug("https://www.figma.com/design/AbCd1234/Jewelry-Brand-Website?node-id=1-2")).toBe("jewelry-brand-website-abcd1234");
-    expect(sanitizeDesignSlug(" Jewelry Brand Website -- AbCd1234 ")).toBe("jewelry-brand-website-abcd1234");
+    expect(suggestDesignSlug("https://www.figma.com/design/AbCd1234/Brand-Site?node-id=1-2")).toBe("brand-site-abcd1234");
+    expect(suggestDesignSlug("https://www.figma.com/make/qLS7R5LvRdXoveRu20yfWR/Redesign-landing-page")).toBe(
+      "redesign-landing-page-qls7r5lvrdxoveru20yfwr"
+    );
+    expect(sanitizeDesignSlug(" Brand Site -- AbCd1234 ")).toBe("brand-site-abcd1234");
   });
 
   it("builds a repo-aligned Claude prompt", () => {
     const prompt = buildClaudePrompt({
-      figmaUrl: "https://www.figma.com/design/AbCd1234/Jewelry-Brand-Website?node-id=1-2",
+      figmaUrl: "https://www.figma.com/design/AbCd1234/Brand-Site?node-id=1-2",
       storeDomain: "store.myshopify.com",
-      designSlug: "jewelry-brand-website-abcd1234"
+      designSlug: "brand-site-abcd1234"
     });
 
     expect(prompt).toContain("AGENTS.md");
     expect(prompt).toContain("figma-to-shopify-pipeline");
-    expect(prompt).toContain("input/designs/jewelry-brand-website-abcd1234/normalized/");
-    expect(prompt).toContain("output/jewelry-brand-website-abcd1234/theme/");
+    expect(prompt).toContain("input/designs/brand-site-abcd1234/normalized/");
+    expect(prompt).toContain("output/brand-site-abcd1234/theme/");
     expect(prompt).toContain("SHOPIFY_STORE=store.myshopify.com");
-    expect(prompt).toContain("scripts/test-home-preview.mjs");
-    expect(prompt).toContain("scripts/test-site-preview.mjs");
+    expect(prompt).toContain("fully functional in a real Shopify theme");
+    expect(prompt).toContain("preserving color palette, typography, layout, spacing");
+    expect(prompt).toContain("UI/design helper skills");
+    expect(prompt).toContain("generic Figma extraction only as source interpretation");
   });
 });

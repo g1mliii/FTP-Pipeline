@@ -1,15 +1,13 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
 import { getDesignContext } from "./lib/design-context.mjs";
+import { loadRouteSpecs } from "./lib/route-specs.mjs";
 
 const designContext = getDesignContext(process.argv[2]);
 const screenshotDir = designContext.playwrightDir;
-const collectionRoute = JSON.parse(await readFile(designContext.files.routeCollection, "utf8"));
-const membershipRoute = JSON.parse(await readFile(designContext.files.routeMembership, "utf8"));
-const productRoute = JSON.parse(await readFile(designContext.files.routeProduct, "utf8"));
-const duskRoute = JSON.parse(await readFile(designContext.files.routeDuskBox, "utf8"));
+const { routes: discoveredRoutes } = await loadRouteSpecs(designContext);
 
 const store = process.env.SHOPIFY_STORE;
 const previewThemeId = process.env.SHOPIFY_PREVIEW_THEME_ID;
@@ -26,13 +24,7 @@ if (!previewThemeId) {
 await mkdir(screenshotDir, { recursive: true });
 
 const baseOrigin = `https://${store}`;
-const routes = [
-  { path: "/", screenshot: "shopify-live-home.png" },
-  { path: collectionRoute.path, screenshot: "shopify-live-collection.png" },
-  { path: membershipRoute.path, screenshot: "shopify-live-membership.png" },
-  { path: productRoute.path, screenshot: "shopify-live-product-primary.png" },
-  { path: duskRoute.path, screenshot: "shopify-live-product-secondary.png" }
-];
+const routes = [{ path: "/", screenshot: "shopify-live-home.png" }, ...discoveredRoutes.map((route) => ({ path: route.path, screenshot: `shopify-live-${route.key}.png` }))];
 
 const withPreviewId = (routePath) =>
   routePath === "/"
@@ -51,10 +43,7 @@ const maybeUnlockStorefront = async (page) => {
 
   await passwordField.fill(storefrontPassword);
   const submitButton = page.locator("button[type='submit'], input[type='submit']").first();
-  await Promise.all([
-    page.waitForLoadState("networkidle"),
-    submitButton.click()
-  ]);
+  await Promise.all([page.waitForLoadState("networkidle"), submitButton.click()]);
 };
 
 const firstText = async (page, selector) => {

@@ -1,10 +1,18 @@
 import { memo } from "react";
-import type { RuntimeState, SecretStatus } from "../../../shared/setup-types";
+import type { CheckResult, SecretStatus } from "../../../shared/setup-types";
+import { prettyStatus, statusTone } from "../lib/steps";
+import { ExpandableMessage } from "./ExpandableMessage";
 
 interface RuntimeSummaryProps {
-  runtimeStates: RuntimeState[];
+  checks: CheckResult[];
   secretStatuses: SecretStatus[];
-  dense?: boolean;
+  onBackupConfigs?: () => void;
+  onRefreshChecks?: () => void;
+  refreshDisabled?: boolean;
+  showWorkspaceTools?: boolean;
+  title?: string;
+  showSavedExtras?: boolean;
+  workspaceToolsDisabled?: boolean;
 }
 
 const getSecretBadge = (item: SecretStatus) => {
@@ -19,69 +27,117 @@ const getSecretBadge = (item: SecretStatus) => {
   return { label: "Needed", tone: "is-action" };
 };
 
-function RuntimeSummaryComponent({ runtimeStates, secretStatuses, dense = false }: RuntimeSummaryProps) {
-  const visibleRuntimeStates = runtimeStates.filter((runtime) => runtime.provider !== "codex" || runtime.installed || runtime.authenticated || runtime.integrations.length > 0);
-  const showRuntimePlaceholders = visibleRuntimeStates.length === 0;
-  const showSecretPlaceholders = secretStatuses.length === 0;
+function RuntimeSummaryComponent({
+  checks,
+  secretStatuses,
+  title = "Needs attention",
+  showSavedExtras = true,
+  showWorkspaceTools = false,
+  onBackupConfigs,
+  onRefreshChecks,
+  refreshDisabled = false,
+  workspaceToolsDisabled = false
+}: RuntimeSummaryProps) {
+  const blockers = checks.filter((item) => item.required && item.status !== "ready");
+  const showPlaceholder = checks.length === 0;
+  const orderedSecretStatuses = [...secretStatuses].sort((left, right) => {
+    const order = ["shopifyStorefrontPassword", "figmaToken"];
+    return order.indexOf(left.id) - order.indexOf(right.id);
+  });
 
   return (
-    <section className={`panel summary-panel${dense ? " is-dense" : ""}`}>
-      <div className="panel-header">
-        <div>
-          <p className="eyebrow">Status</p>
-          <h3>Runtime Summary</h3>
+    <section className="summary-panel">
+      {showWorkspaceTools ? (
+        <div className="summary-section">
+          <div className="summary-section-header">
+            <p className="eyebrow">Workspace tools</p>
+          </div>
+          <p className="summary-copy">Refresh checks or back up local config without leaving the build screen.</p>
+          <div className="summary-tool-grid">
+            <button className="button button-secondary button-inline" type="button" disabled={refreshDisabled} onClick={onRefreshChecks}>
+              Refresh Checks
+            </button>
+            <button className="button button-inline" type="button" disabled={workspaceToolsDisabled} onClick={onBackupConfigs}>
+              Back Up Configs
+            </button>
+          </div>
         </div>
+      ) : null}
+
+      <div className="summary-shell">
+        <p className="eyebrow">Quick read</p>
+        <h3>{showPlaceholder ? "Checking the workspace" : blockers.length > 0 ? title : "Ready to build"}</h3>
+        <p className="summary-copy">
+          {showPlaceholder
+            ? "The desktop app is still checking tools and saved state."
+            : blockers.length > 0
+              ? `${blockers.length} required item${blockers.length === 1 ? "" : "s"} still need attention.`
+              : "Core setup is in place. Move through the steps and run the build when ready."}
+        </p>
       </div>
 
-      <div className="runtime-grid">
-        {showRuntimePlaceholders ? (
-          <article className="runtime-card runtime-card-placeholder">
-            <div className="runtime-header">
-              <strong>Runtime checks</strong>
-              <span className="runtime-state is-action">Loading</span>
-            </div>
-            <p>The desktop app is still resolving Claude, Codex, and integration status.</p>
+      <div className="summary-list">
+        {showPlaceholder ? (
+          <article className="summary-item is-muted">
+            <strong>Loading checks</strong>
+            <p>Status details will appear here once the first pass completes.</p>
           </article>
         ) : (
-          visibleRuntimeStates.map((runtime) => (
-            <article key={runtime.provider} className={`runtime-card${dense ? " is-compact" : ""}`}>
-              <div className="runtime-header">
-                <strong>{runtime.provider === "claude" ? "Claude" : "Codex"}</strong>
-                <span className={`runtime-state ${runtime.installed ? "is-ready" : "is-error"}`}>{runtime.installed ? "Installed" : "Missing"}</span>
-              </div>
-              <p>{runtime.detail ?? (runtime.authenticated ? "Authenticated or ready." : "Authentication required.")}</p>
-              <ul>
-                {runtime.integrations.length > 0 ? runtime.integrations.map((item) => <li key={item}>{item}</li>) : <li>No integrations ready yet.</li>}
-              </ul>
-            </article>
-          ))
-        )}
-      </div>
-
-      <div className="runtime-grid">
-        {showSecretPlaceholders ? (
-          <article className="runtime-card runtime-card-placeholder">
-            <div className="runtime-header">
-              <strong>Vault state</strong>
-              <span className="runtime-state is-action">Loading</span>
-            </div>
-            <p>Secure token and storefront-password status will appear here once the initial checks complete.</p>
-          </article>
-        ) : (
-          secretStatuses.map((item) => {
-            const badge = getSecretBadge(item);
-            return (
-              <article key={item.id} className={`runtime-card${dense ? " is-compact" : ""}`}>
-                <div className="runtime-header">
-                  <strong>{item.label}</strong>
-                  <span className={`runtime-state ${badge.tone}`}>{badge.label}</span>
+          <>
+            {blockers.length > 0 ? (
+              blockers.map((item) => (
+                <article key={item.id} className={`summary-item ${statusTone[item.status]}`}>
+                  <div className="summary-item-header">
+                    <strong>{item.label}</strong>
+                    <span className={`runtime-state ${statusTone[item.status]}`}>{prettyStatus(item.status)}</span>
+                  </div>
+                  <ExpandableMessage
+                    summaryLabel="Show blocker details"
+                    text={item.detail ?? "Needs attention before the build can continue."}
+                  />
+                </article>
+              ))
+            ) : (
+              <article className="summary-item is-ready">
+                <div className="summary-item-header">
+                  <strong>Required setup complete</strong>
+                  <span className="runtime-state is-ready">Ready</span>
                 </div>
-                <p>{item.detail}</p>
+                <p>The required checks have passed. Optional extras can still be added later.</p>
               </article>
-            );
-          })
+            )}
+          </>
         )}
       </div>
+
+      {showSavedExtras ? (
+        <div className="summary-section">
+          <div className="summary-section-header">
+            <p className="eyebrow">Saved extras</p>
+          </div>
+          <div className="summary-list">
+            {secretStatuses.length === 0 ? (
+              <article className="summary-item is-muted">
+                <strong>Vault not loaded yet</strong>
+                <p>Saved tokens and storefront passwords will appear here.</p>
+              </article>
+            ) : (
+            orderedSecretStatuses.map((item) => {
+              const badge = getSecretBadge(item);
+              return (
+                <article key={item.id} className="summary-item is-muted">
+                    <div className="summary-item-header">
+                      <strong>{item.label}</strong>
+                      <span className={`runtime-state ${badge.tone}`}>{badge.label}</span>
+                    </div>
+                    <ExpandableMessage summaryLabel="Show saved state details" text={item.detail} />
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

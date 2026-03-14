@@ -90,6 +90,10 @@ export interface ActionResult {
 
 export interface LaunchClaudeContext {
   storeDomain?: string;
+  designSlug?: string;
+  figmaToken?: string;
+  storefrontPassword?: string;
+  useStoredBuildSecrets?: boolean;
 }
 
 export interface BuildDraft {

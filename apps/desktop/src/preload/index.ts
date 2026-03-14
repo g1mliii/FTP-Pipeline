@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld("desktopApi", {
   cancelBuild: () => ipcRenderer.invoke("build:cancel"),
   getBuildStatus: () => ipcRenderer.invoke("build:getStatus"),
   readClipboardText: () => Promise.resolve(clipboard.readText()),
+  writeClipboardText: (text: string) => Promise.resolve(clipboard.writeText(text)),
   launchClaudeTerminal: (context?: LaunchClaudeContext) => ipcRenderer.invoke("chat:launchClaudeTerminal", context),
   closeClaudeTerminal: () => ipcRenderer.invoke("chat:closeClaudeTerminal"),
   writeTerminal: (data: string) => ipcRenderer.invoke("chat:write", data),

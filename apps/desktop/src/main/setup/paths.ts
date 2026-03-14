@@ -6,7 +6,9 @@ const { app } = require("electron");
 
 
 const looksLikeWorkspaceRoot = (candidate: string) =>
-  existsSync(path.join(candidate, "package.json")) && existsSync(path.join(candidate, "scripts", "generate-shopify-site.mjs"));
+  existsSync(path.join(candidate, "package.json")) &&
+  existsSync(path.join(candidate, "scripts", "fetch-figma-file.mjs")) &&
+  existsSync(path.join(candidate, "scripts", "push-preview-theme.mjs"));
 
 const readStarterManifestVersion = (candidate: string) => {
   try {

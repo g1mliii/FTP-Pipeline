@@ -6,13 +6,6 @@ import type { BuildInput, BuildRunState } from "../../shared/setup-types";
 
 const BUILD_OUTPUT_CHANNEL = "build:output";
 const BUILD_STATUS_CHANNEL = "build:status";
-const VISIBLE_PLAYWRIGHT_ENV = {
-  PLAYWRIGHT_HEADLESS: "false",
-  PLAYWRIGHT_SLOWMO: "175",
-  PLAYWRIGHT_HUMAN_PAUSE_MS: "325",
-  PLAYWRIGHT_KEEP_OPEN_MS: "900"
-} as const;
-
 class BuildCancelledError extends Error {}
 
 const redactSecrets = (value: string, secrets: string[]) => {
@@ -122,31 +115,12 @@ export class ClaudeBuildManager {
         `claude -p ${JSON.stringify(prompt)}`
       );
 
-      const previewEnv = {
-        ...env,
-        ...VISIBLE_PLAYWRIGHT_ENV
-      };
-      await this.runProcess(
-        "node",
-        ["scripts/test-home-preview.mjs", normalized.designSlug],
-        previewEnv,
-        `Running visible Playwright homepage preview for ${normalized.designSlug}.`,
-        `node scripts/test-home-preview.mjs ${normalized.designSlug}`
-      );
-      await this.runProcess(
-        "node",
-        ["scripts/test-site-preview.mjs", normalized.designSlug],
-        previewEnv,
-        `Running visible Playwright route preview for ${normalized.designSlug}.`,
-        `node scripts/test-site-preview.mjs ${normalized.designSlug}`
-      );
-
       this.state = {
         ...this.state,
         status: "succeeded",
         finishedAt: new Date().toISOString(),
         exitCode: 0,
-        summary: "Claude build completed and visible Playwright preview checks passed."
+        summary: "Claude build completed."
       };
       this.publishState();
     } catch (error) {

@@ -1,132 +1,99 @@
-import { memo, useMemo, type RefObject } from "react";
-import type { BuildDraft, BuildRunState } from "../../../shared/setup-types";
+import { memo } from "react";
+import type { BuildDraft, BuildRunState, LaunchClaudeContext } from "../../../shared/setup-types";
 import { buildTone, prettyStatus } from "../lib/steps";
 import { ClaudeTerminalSurface } from "./ClaudeTerminalSurface";
-
-interface ConnectionFieldErrors {
-  storeDomain?: string;
-  figmaUrl?: string;
-  designSlugDraft?: string;
-}
+import { ExpandableMessage } from "./ExpandableMessage";
 
 interface BuildStepProps {
   buildDraft: BuildDraft | null;
-  buildLogSegments: string[];
   buildState: BuildRunState;
   busy: boolean;
-  designSlugDraft: string;
-  designSlugRef: RefObject<HTMLInputElement | null>;
-  errors: ConnectionFieldErrors;
-  figmaUrl: string;
-  figmaUrlRef: RefObject<HTMLInputElement | null>;
-  onChangeDesignSlugDraft: (value: string) => void;
-  onChangeFigmaUrl: (value: string) => void;
-  onChangeStoreDomain: (value: string) => void;
+  launchContext?: LaunchClaudeContext;
+  launchNonce: number;
   onLaunchTerminal: () => void;
   onTerminalExit: () => void;
   onTerminalStarted: () => void;
   onStartBuild: () => void;
   onCancelBuild: () => void;
-  storeDomain: string;
-  storeDomainRef: RefObject<HTMLInputElement | null>;
+  shouldLaunchTerminalSession: boolean;
   terminalReady: boolean;
   terminalVisible: boolean;
 }
 
 function BuildStepComponent({
   buildDraft,
-  buildLogSegments,
   buildState,
   busy,
-  designSlugDraft,
-  designSlugRef,
-  errors,
-  figmaUrl,
-  figmaUrlRef,
+  launchContext,
+  launchNonce,
   onCancelBuild,
-  onChangeDesignSlugDraft,
-  onChangeFigmaUrl,
-  onChangeStoreDomain,
   onLaunchTerminal,
   onTerminalExit,
   onTerminalStarted,
   onStartBuild,
-  storeDomain,
-  storeDomainRef,
+  shouldLaunchTerminalSession,
   terminalReady,
   terminalVisible
 }: BuildStepProps) {
-  const buildOutputText = useMemo(
-    () => (buildLogSegments.length > 0 ? buildLogSegments.join("") : "No build output yet."),
-    [buildLogSegments]
-  );
-  const hasBuildOutput = buildLogSegments.length > 0;
+  const hasSavedDetails = Boolean(buildDraft?.figmaUrl && buildDraft.storeDomain && buildDraft.designSlug);
+  const savedBuildDraft = hasSavedDetails ? buildDraft : null;
+  const isReadyToRun = hasSavedDetails && buildState.status === "idle";
+  const readinessTitle =
+    buildState.status === "running"
+      ? "Build in progress"
+      : buildState.status === "succeeded"
+        ? "Build finished"
+        : buildState.status === "failed"
+          ? "Build needs attention"
+          : buildState.status === "cancelled"
+            ? "Build cancelled"
+            : isReadyToRun
+              ? "Ready to run"
+              : "Missing build details";
+  const readinessCopy =
+    buildState.status === "running"
+      ? "Claude is building the theme now. The preview checks will open after it finishes."
+      : buildState.status === "succeeded"
+        ? "The last build completed. Run it again any time after updating the design or store details."
+        : buildState.status === "failed"
+          ? "The last build failed. Review the details below, then run it again."
+          : buildState.status === "cancelled"
+            ? "The build was stopped before completion. You can start it again when ready."
+            : isReadyToRun
+              ? "All required details are saved. You can run the build now."
+              : "Save the project name, store, and Figma file in Details before you start the build.";
+  const readinessClassName = isReadyToRun && buildState.status === "idle" ? "build-ready-card is-launch-ready" : "build-ready-card";
 
   return (
     <div className="build-stack build-step">
-      <div className="form-grid build-form-grid">
-        <label className="is-wide">
-          <span>Figma File URL</span>
-          <input
-            ref={figmaUrlRef}
-            autoComplete="off"
-            inputMode="url"
-            name="buildFigmaUrl"
-            placeholder="https://www.figma.com/design/FILE_KEY/Example…"
-            spellCheck={false}
-            type="url"
-            value={figmaUrl}
-            onChange={(event) => onChangeFigmaUrl(event.target.value)}
-          />
-          {errors.figmaUrl ? <small className="field-error">{errors.figmaUrl}</small> : null}
-        </label>
-
-        <label>
-          <span>Shopify Store Domain</span>
-          <input
-            ref={storeDomainRef}
-            autoComplete="off"
-            inputMode="url"
-            name="buildShopifyStoreDomain"
-            placeholder="your-store.myshopify.com…"
-            spellCheck={false}
-            type="text"
-            value={storeDomain}
-            onChange={(event) => onChangeStoreDomain(event.target.value)}
-          />
-          {errors.storeDomain ? <small className="field-error">{errors.storeDomain}</small> : null}
-        </label>
-
-        <label>
-          <span>Project Name</span>
-          <input
-            ref={designSlugRef}
-            autoComplete="off"
-            name="buildDesignSlug"
-            placeholder="my-project-name…"
-            spellCheck={false}
-            type="text"
-            value={designSlugDraft}
-            onChange={(event) => onChangeDesignSlugDraft(event.target.value)}
-          />
-          {errors.designSlugDraft ? <small className="field-error">{errors.designSlugDraft}</small> : null}
-        </label>
-      </div>
-
       <div className="build-summary">
-        <article className="check-card is-idle is-compact">
-          <div className="check-row">
+        <article className={`check-card is-compact ${readinessClassName}`}>
+          <div className="build-ready-header">
             <div className="min-w-0">
-              <h4>Draft Context</h4>
-              <p>Saved store and Figma context feed the Claude build env. After Claude finishes, the wrapper opens a visible Chromium window and runs the local Playwright preview checks for you.</p>
+              <p className="eyebrow">Build status</p>
+              <h4>{readinessTitle}</h4>
+              <p>{readinessCopy}</p>
             </div>
-            <span className={`status-chip ${buildTone[buildState.status]}`}>{prettyStatus(buildState.status)}</span>
+            <span className={`status-chip ${buildTone[buildState.status]}${isReadyToRun && buildState.status === "idle" ? " is-ready-pill" : ""}`}>
+              {isReadyToRun && buildState.status === "idle" ? "Ready" : prettyStatus(buildState.status)}
+            </span>
           </div>
-          {buildState.summary ? <p>{buildState.summary}</p> : null}
+          {buildState.summary ? <ExpandableMessage summaryLabel="Show build details" text={buildState.summary} /> : null}
+          {savedBuildDraft ? (
+            <div className="build-ready-grid">
+              <span>Project: {savedBuildDraft.designSlug}</span>
+              <span>Store: {savedBuildDraft.storeDomain}</span>
+              <span className="draft-wide">Figma source saved</span>
+            </div>
+          ) : null}
           {buildDraft ? (
-            <div className="draft-metadata">
-              <span>Optional Figma API token: {buildDraft.figmaTokenStored ? "stored" : "not set"}</span>
-              <span>Storefront password: {buildDraft.storefrontPasswordStored ? "stored" : "not set"}</span>
+            <div className="build-optional-row">
+              <span className={`build-optional-pill${buildDraft.figmaTokenStored ? " is-stored" : ""}`}>
+                Figma API token: {buildDraft.figmaTokenStored ? "stored" : "not set"}
+              </span>
+              <span className={`build-optional-pill${buildDraft.storefrontPasswordStored ? " is-stored" : ""}`}>
+                Storefront password: {buildDraft.storefrontPasswordStored ? "stored" : "not set"}
+              </span>
             </div>
           ) : null}
         </article>
@@ -134,38 +101,34 @@ function BuildStepComponent({
 
       <div className="panel-actions build-actions">
         <button className="button button-action" type="button" disabled={busy || buildState.status === "running"} onClick={onStartBuild}>
-          {buildState.status === "running" ? "Building…" : "Start Build & Watch Tests"}
+          {buildState.status === "running" ? "Building…" : "Run Build in Terminal"}
         </button>
         <button className="button button-secondary button-action" type="button" disabled={buildState.status !== "running"} onClick={onCancelBuild}>
-          Cancel Build
+          Stop Build
         </button>
         <button className="button button-secondary button-action" type="button" disabled={busy && !terminalVisible} onClick={onLaunchTerminal}>
-          {terminalVisible ? "Close Claude Terminal" : "Launch Claude Terminal"}
+          {terminalVisible ? "Close Terminal" : "Open Claude Terminal"}
         </button>
       </div>
 
       <section className={`build-terminal-panel ${terminalVisible ? "is-active" : "is-idle"}`}>
         <div className="terminal-header">
           <div className="min-w-0">
-            <p className="eyebrow">Interactive orchestration</p>
+            <p className="eyebrow">Interactive control</p>
             <h3>{terminalVisible ? (terminalReady ? "Claude Terminal Active" : "Launching Claude Terminal") : "Claude Terminal"}</h3>
-            <p>Keep the terminal front-and-center when you need to drive Claude directly from the repo workspace.</p>
+            <p>The build now runs in this terminal so you can interrupt it, adjust prompts, and continue manually.</p>
           </div>
         </div>
 
-        <ClaudeTerminalSurface active={terminalVisible} onExit={onTerminalExit} onStarted={onTerminalStarted} storeDomain={storeDomain} />
+        <ClaudeTerminalSurface
+          active={terminalVisible}
+          launchContext={launchContext}
+          launchNonce={launchNonce}
+          onExit={onTerminalExit}
+          onStarted={onTerminalStarted}
+          shouldLaunchSession={shouldLaunchTerminalSession}
+        />
       </section>
-
-      <div className="build-console">
-        <div className="terminal-header">
-          <div className="min-w-0">
-            <p className="eyebrow">Live progress</p>
-            <h3>Claude Build Output</h3>
-            <p>A real browser window opens automatically during the homepage and route preview checks.</p>
-          </div>
-        </div>
-        <pre className={hasBuildOutput ? "has-output" : "is-empty"}>{buildOutputText}</pre>
-      </div>
     </div>
   );
 }

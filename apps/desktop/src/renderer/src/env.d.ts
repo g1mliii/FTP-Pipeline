@@ -39,6 +39,7 @@ declare global {
       cancelBuild(): Promise<BuildRunState | undefined>;
       getBuildStatus(): Promise<BuildRunState | undefined>;
       readClipboardText(): Promise<string>;
+      writeClipboardText(text: string): Promise<void>;
       launchClaudeTerminal(context?: LaunchClaudeContext): Promise<boolean>;
       closeClaudeTerminal(): Promise<boolean>;
       writeTerminal(data: string): Promise<boolean>;

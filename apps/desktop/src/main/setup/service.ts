@@ -1,8 +1,7 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import AdmZip from "adm-zip";
 import type { Event as ElectronEvent, WebContents } from "electron";
 import { suggestDesignSlug, isValidFigmaUrl, isValidStoreDomain, normalizeStoreDomain, sanitizeDesignSlug } from "../../shared/build-utils";
 import type {
@@ -261,9 +260,49 @@ const maybeOpenAuthUrl = async (text: string) => {
   }
 };
 
+const findExistingPath = async (candidates: string[]) => {
+  for (const candidate of candidates) {
+    if (await fileExists(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
+const shopifyAuthPendingMessage = (storeDomain: string) =>
+  `Finish Shopify login in the browser for ${storeDomain}, then click Recheck Shopify Session.`;
+
+const parseShopifyAuthFailure = (storeDomain: string, stdout: string, stderr: string) => {
+  const payload = `${stdout}\n${stderr}`.trim();
+  const lowered = payload.toLowerCase();
+
+  if (
+    lowered.includes("unavailable shop") ||
+    lowered.includes('"status":402') ||
+    lowered.includes("graphql error (code: 402)") ||
+    lowered.includes(`unknown error connecting to your store ${storeDomain.toLowerCase()}`)
+  ) {
+    return {
+      status: "action_required" as const,
+      detail: `Shopify could not reach ${storeDomain}. Confirm the .myshopify.com domain is correct and that the store is active and available to Shopify CLI.`,
+      message: `Shopify could not reach ${storeDomain}. Check that the store exists, is active, and that the .myshopify.com domain is correct.`
+    };
+  }
+
+  return null;
+};
+
 export class SetupService {
   readonly workspaceRoot = findWorkspaceRoot();
   readonly secretStore = new SecretStore();
+
+  private async resolveClaudeSkillSource() {
+    return findExistingPath([
+      path.join(this.workspaceRoot, "skills", "figma-to-shopify-pipeline", "SKILL.md"),
+      path.join(this.workspaceRoot, "figma-to-shopify-pipeline", "SKILL.md")
+    ]).then((skillFile) => (skillFile ? path.dirname(skillFile) : null));
+  }
 
   private createIdleSnapshot(inputs: SetupInputState, secretStatuses: SetupSnapshot["secretStatuses"]): SetupSnapshot {
     return {
@@ -282,13 +321,17 @@ export class SetupService {
       : !isValidStoreDomain(currentState.storeDomain)
         ? Promise.resolve(check("shopifyAuth", "action_required", "Store domain must be a valid *.myshopify.com hostname."))
         : runShopifyCommand(["theme", "list", "--store", currentState.storeDomain, "--json"], this.workspaceRoot, STATUS_CHECK_TIMEOUT_MS).then(
-            (authOutcome) =>
-              check(
+            (authOutcome) => {
+              const failure = parseShopifyAuthFailure(currentState.storeDomain, authOutcome.stdout, authOutcome.stderr);
+              return check(
                 "shopifyAuth",
-                authOutcome.ok ? "ready" : "auth_required",
-                authOutcome.ok ? `Authenticated for ${currentState.storeDomain}.` : authOutcome.stderr || authOutcome.stdout || "Shopify auth is required.",
+                authOutcome.ok ? "ready" : failure?.status ?? "auth_required",
+                authOutcome.ok
+                  ? `Shopify CLI is already authenticated for ${currentState.storeDomain}.`
+                  : failure?.detail ?? authOutcome.stderr ?? authOutcome.stdout ?? "Shopify auth is required.",
                 authOutcome.command
-              )
+              );
+            }
           );
 
     const [
@@ -617,12 +660,18 @@ export class SetupService {
     await this.backupConfigs();
     const userPaths = getUserPaths();
     await mkdir(userPaths.claudeSkills, { recursive: true, mode: 0o700 });
+    const skillSource = await this.resolveClaudeSkillSource();
+    if (!skillSource) {
+      return {
+        ok: false,
+        message: "The repo skill source could not be found in the workspace.",
+        snapshot: await this.runChecks()
+      };
+    }
 
-    const packagedSkill = path.join(this.workspaceRoot, "figma-to-shopify-pipeline.skill");
-    const extractedSkillRoot = path.join(userPaths.appDataRoot, "skill-cache", "figma-to-shopify-pipeline");
-    await mkdir(extractedSkillRoot, { recursive: true, mode: 0o700 });
-    new AdmZip(packagedSkill).extractAllTo(extractedSkillRoot, true);
-    await ensureDirectoryCopy(path.join(extractedSkillRoot, "figma-to-shopify-pipeline"), path.join(userPaths.claudeSkills, "figma-to-shopify-pipeline"));
+    const targetSkillDir = path.join(userPaths.claudeSkills, "figma-to-shopify-pipeline");
+    await rm(targetSkillDir, { recursive: true, force: true });
+    await ensureDirectoryCopy(skillSource, targetSkillDir);
 
     const figmaInstall = await runCommand("claude", ["plugin", "install", "figma@claude-plugins-official"], { cwd: this.workspaceRoot });
     if (!figmaInstall.ok && !figmaInstall.stdout.includes("already installed")) {
@@ -703,7 +752,27 @@ export class SetupService {
     if (existingAuth.ok) {
       return {
         ok: true,
-        message: `Shopify is already authenticated for ${trimmedDomain}.`,
+        message: `Shopify CLI is already authenticated for ${trimmedDomain}.`,
+        outcome: existingAuth,
+        snapshot: await this.runChecks({ storeDomain: trimmedDomain })
+      };
+    }
+
+    const existingAuthFailure = parseShopifyAuthFailure(trimmedDomain, existingAuth.stdout, existingAuth.stderr);
+    if (existingAuthFailure) {
+      return {
+        ok: false,
+        message: existingAuthFailure.message,
+        outcome: existingAuth,
+        snapshot: await this.runChecks({ storeDomain: trimmedDomain })
+      };
+    }
+
+    const existingAuthOpenedBrowser = await maybeOpenAuthUrl(`${existingAuth.stdout}\n${existingAuth.stderr}`);
+    if (existingAuthOpenedBrowser) {
+      return {
+        ok: true,
+        message: shopifyAuthPendingMessage(trimmedDomain),
         outcome: existingAuth,
         snapshot: await this.runChecks({ storeDomain: trimmedDomain })
       };
@@ -711,13 +780,16 @@ export class SetupService {
 
     const outcome = await runShopifyCommand(["auth", "login", "--store", trimmedDomain], this.workspaceRoot);
     const openedBrowser = await maybeOpenAuthUrl(`${outcome.stdout}\n${outcome.stderr}`);
+    const authFailure = parseShopifyAuthFailure(trimmedDomain, outcome.stdout, outcome.stderr);
 
     return {
-      ok: outcome.ok,
+      ok: outcome.ok || openedBrowser,
       message: outcome.ok
         ? `Shopify auth finished for ${trimmedDomain}.`
         : openedBrowser
-          ? `Complete Shopify login in the browser for ${trimmedDomain}, then refresh checks if needed.`
+          ? shopifyAuthPendingMessage(trimmedDomain)
+          : authFailure
+            ? authFailure.message
           : `Shopify auth requires completion for ${trimmedDomain}.`,
       outcome,
       snapshot: await this.runChecks({ storeDomain: trimmedDomain })

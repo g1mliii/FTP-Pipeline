@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { AgentStep } from "./components/AgentStep";
 import { ConnectionsStep } from "./components/ConnectionsStep";
 import { BuildStep } from "./components/BuildStep";
@@ -9,8 +10,33 @@ import { useDesktopController } from "./hooks/useDesktopController";
 
 function App() {
   const controller = useDesktopController();
-  const checksForStep = (stepId: (typeof controller.steps)[number]["id"]) =>
-    controller.snapshot?.checks.filter((item) => stepChecks[stepId].includes(item.id)) ?? [];
+  const currentStep = useMemo(
+    () => controller.steps.find((item) => item.id === controller.activeStep),
+    [controller.activeStep, controller.steps]
+  );
+  const currentStepChecks = useMemo(
+    () => controller.snapshot?.checks.filter((item) => stepChecks[controller.activeStep].includes(item.id)) ?? [],
+    [controller.activeStep, controller.snapshot?.checks]
+  );
+  const unresolvedCurrentStepChecks = useMemo(
+    () => currentStepChecks.filter((item) => item.status !== "ready"),
+    [currentStepChecks]
+  );
+  const showRuntimeSummary = !["dependencies", "connections", "build"].includes(controller.activeStep);
+  const showSavedExtras = !["agent", "connections"].includes(controller.activeStep);
+  const showTopToolbar = controller.activeStep !== "build";
+
+  useEffect(() => {
+    if (!controller.resultMessage || controller.resultIsError) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      controller.clearResult();
+    }, 4000);
+
+    return () => window.clearTimeout(timeout);
+  }, [controller.clearResult, controller.resultIsError, controller.resultMessage]);
 
   return (
     <div className="app-shell">
@@ -23,17 +49,13 @@ function App() {
       />
 
       <main id="app-main" className="app-main">
-        {controller.activeStep === "dependencies" ? (
-          <header className="hero-panel">
-            <div className="min-w-0">
-              <p className="eyebrow">Guided setup</p>
-              <h2>Persist store context, secure vault values, and launch Claude from the repo root</h2>
-              <p className="hero-copy">
-                The wrapper keeps store and Figma context across restarts, stores sensitive values in the OS credential
-                vault, and runs a non-interactive Claude build without bypassing the existing route-aware repo flow.
-              </p>
+        {showTopToolbar ? (
+          <div className="top-toolbar utility-toolbar">
+            <div className="utility-copy">
+              <p className="eyebrow">Workspace tools</p>
+              <p>Refresh checks or back up the local config before you run the build.</p>
             </div>
-            <div className="hero-actions">
+            <div className="button-row">
               <button
                 className="button button-secondary button-toolbar"
                 type="button"
@@ -48,8 +70,18 @@ function App() {
                 disabled={controller.busy}
                 onClick={() => void controller.runAction("backup", () => window.desktopApi.backupConfigs())}
               >
-                Backup Configs
+                Back Up Configs
               </button>
+            </div>
+          </div>
+        ) : null}
+
+        {controller.activeStep === "dependencies" ? (
+          <header className="hero-panel">
+            <div className="min-w-0">
+              <p className="eyebrow">Getting started</p>
+              <h2>Save the essentials, check the tools, and run the build</h2>
+              <p className="hero-copy">The wrapper keeps your store details, saves optional secrets, and opens preview checks after the build.</p>
             </div>
           </header>
         ) : null}
@@ -60,36 +92,17 @@ function App() {
           </div>
         ) : null}
 
-        <section className="panel-grid">
+        <section className={`panel-grid${showRuntimeSummary ? "" : " is-single-column"}`}>
           <section className="panel">
             <div className="panel-header">
               <div className="min-w-0">
                 <p className="eyebrow">Current step</p>
-                <h3>{controller.steps.find((item) => item.id === controller.activeStep)?.title}</h3>
+                <h3>{currentStep?.title}</h3>
+                {currentStep?.description ? <p className="step-note">{currentStep.description}</p> : null}
               </div>
               <div className="panel-header-side">
                 {controller.busyLabel ? <span className="busy-pill">{controller.busyLabel}…</span> : null}
                 {!controller.busyLabel && controller.checksRefreshing ? <span className="busy-pill">Refreshing checks…</span> : null}
-                {controller.activeStep !== "dependencies" ? (
-                  <div className="panel-header-actions">
-                    <button
-                      className="button button-secondary button-toolbar"
-                      type="button"
-                      disabled={controller.busy || controller.checksRefreshing}
-                      onClick={() => void controller.refreshAll()}
-                    >
-                      {controller.checksRefreshing ? "Refreshing…" : "Refresh Checks"}
-                    </button>
-                    <button
-                      className="button button-toolbar"
-                      type="button"
-                      disabled={controller.busy}
-                      onClick={() => void controller.runAction("backup", () => window.desktopApi.backupConfigs())}
-                    >
-                      Backup Configs
-                    </button>
-                  </div>
-                ) : null}
               </div>
             </div>
 
@@ -102,15 +115,27 @@ function App() {
                     disabled={controller.busy}
                     onClick={() => void controller.runAction("dependencies", () => window.desktopApi.installDependencies())}
                   >
-                    Install Dependencies
+                    Install Core Tools
                   </button>
                 </div>
-                {checksForStep("dependencies").length > 0 ? (
-                  <div className="check-list">
-                    {checksForStep("dependencies").map((item) => (
-                      <CheckCard key={item.id} item={item} />
-                    ))}
-                  </div>
+                {currentStepChecks.length > 0 ? (
+                  unresolvedCurrentStepChecks.length > 0 ? (
+                    <div className="check-list">
+                      {unresolvedCurrentStepChecks.map((item) => (
+                        <CheckCard key={item.id} item={item} />
+                      ))}
+                    </div>
+                  ) : (
+                    <article className="check-card is-ready runtime-card-placeholder">
+                      <div className="check-row">
+                        <div className="min-w-0">
+                          <h4>Dependencies ready</h4>
+                          <p>Node, repo packages, Shopify CLI, and Playwright Chromium are already in place.</p>
+                        </div>
+                        <span className="status-chip">Ready</span>
+                      </div>
+                    </article>
+                  )
                 ) : (
                   <article className="check-card runtime-card-placeholder">
                     <div className="check-row">
@@ -186,37 +211,37 @@ function App() {
             {controller.activeStep === "build" ? (
               <BuildStep
                 buildDraft={controller.buildDraft}
-                buildLogSegments={controller.deferredBuildLogSegments}
                 buildState={controller.buildState}
                 busy={controller.busy}
-                designSlugDraft={controller.designSlugDraft}
-                designSlugRef={controller.designSlugRef}
-                errors={controller.fieldErrors}
-                figmaUrl={controller.figmaUrl}
-                figmaUrlRef={controller.figmaUrlRef}
-                storeDomain={controller.storeDomain}
-                storeDomainRef={controller.storeDomainRef}
+                launchContext={controller.terminalLaunchContext}
+                launchNonce={controller.terminalLaunchNonce}
                 onCancelBuild={() => void controller.cancelBuild()}
-                onChangeDesignSlugDraft={controller.setDesignSlugDraft}
-                onChangeFigmaUrl={controller.setFigmaUrl}
-                onChangeStoreDomain={controller.setStoreDomain}
                 onLaunchTerminal={() => void controller.launchClaude()}
                 onTerminalExit={controller.handleTerminalExit}
                 onTerminalStarted={controller.handleTerminalStarted}
                 onStartBuild={() => void controller.startBuild()}
+                shouldLaunchTerminalSession={!controller.terminalReady}
                 terminalReady={controller.terminalReady}
                 terminalVisible={controller.terminalVisible}
               />
             ) : null}
           </section>
 
-          <div className="side-column">
-            <RuntimeSummary
-              runtimeStates={controller.snapshot?.runtimeStates ?? []}
-              secretStatuses={controller.secretStatuses}
-              dense={controller.activeStep === "agent" || controller.activeStep === "connections" || controller.activeStep === "build"}
-            />
-          </div>
+          {showRuntimeSummary ? (
+            <div className="side-column">
+              <RuntimeSummary
+                checks={controller.snapshot?.checks ?? []}
+                secretStatuses={controller.secretStatuses}
+                onBackupConfigs={() => void controller.runAction("backup", () => window.desktopApi.backupConfigs())}
+                onRefreshChecks={() => void controller.refreshAll()}
+                refreshDisabled={controller.busy || controller.checksRefreshing}
+                showSavedExtras={showSavedExtras}
+                showWorkspaceTools={controller.activeStep === "build"}
+                title={currentStep?.title ? `${currentStep.title} blockers` : "Needs attention"}
+                workspaceToolsDisabled={controller.busy}
+              />
+            </div>
+          ) : null}
         </section>
       </main>
     </div>

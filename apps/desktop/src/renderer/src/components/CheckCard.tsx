@@ -1,5 +1,6 @@
 import type { CheckResult } from "../../../shared/setup-types";
 import { prettyStatus, statusTone } from "../lib/steps";
+import { ExpandableMessage } from "./ExpandableMessage";
 
 interface CheckCardProps {
   item: CheckResult;
@@ -12,7 +13,7 @@ export function CheckCard({ item, compact = false }: CheckCardProps) {
       <div className="check-row">
         <div className="min-w-0">
           <h4>{item.label}</h4>
-          <p>{item.detail}</p>
+          <ExpandableMessage summaryLabel="Show full status" text={item.detail} />
         </div>
         <span className="status-chip">{prettyStatus(item.status)}</span>
       </div>

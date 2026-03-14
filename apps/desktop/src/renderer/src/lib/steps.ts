@@ -1,10 +1,10 @@
 import type { CheckResult, SetupStepId } from "../../../shared/setup-types";
 
 export const steps: Array<{ id: SetupStepId; title: string; description: string }> = [
-  { id: "dependencies", title: "Dependencies", description: "Core runtime, repo install, Shopify CLI, and Playwright browser." },
-  { id: "agent", title: "Agent", description: "Claude-first setup with optional Codex support." },
-  { id: "connections", title: "Connections", description: "Store context, auth, and secure vault values." },
-  { id: "build", title: "Build", description: "Launch a Claude build and stream the output live." }
+  { id: "dependencies", title: "Dependencies", description: "Install the core tools and browser." },
+  { id: "agent", title: "Agent", description: "Set up Claude first. Add Codex only if needed." },
+  { id: "connections", title: "Details", description: "Save store details and optional vault values." },
+  { id: "build", title: "Build", description: "Run the build and watch the checks." }
 ];
 
 export const stepChecks: Record<SetupStepId, string[]> = {

@@ -9,20 +9,15 @@ const targetRoot = path.join(desktopRoot, "build", "starter-workspace");
 
 const rootPackage = JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8"));
 const runtimePackage = {
-  name: "figma-shopify-flow-runtime",
+  name: "figma-shopify-pipeline-runtime",
   private: true,
   type: "module",
   scripts: {
     "fetch:figma": "node scripts/fetch-figma-file.mjs",
-    generate: "node scripts/generate-shopify-site.mjs",
-    "build:preview": "node scripts/build-site-preview.mjs",
     preview: "node scripts/serve-preview.mjs",
     "validate:shopify": "node scripts/validate-shopify.mjs",
     "push:preview": "node scripts/push-preview-theme.mjs",
-    "test:shopify-preview": "node scripts/test-shopify-preview.mjs",
-    "test:preview:home": "node scripts/test-home-preview.mjs",
-    "test:preview": "node scripts/test-site-preview.mjs",
-    flow: "npm run generate && npm run build:preview && npm run test:preview:home && npm run test:preview"
+    "test:shopify-preview": "node scripts/test-shopify-preview.mjs"
   },
   dependencies: {
     playwright: rootPackage.dependencies.playwright
@@ -44,7 +39,7 @@ const copyEntry = async (relativePath) => {
 await rm(targetRoot, { recursive: true, force: true });
 await mkdir(targetRoot, { recursive: true });
 
-for (const relativePath of ["AGENTS.md", "README.md", "figma-to-shopify-pipeline.skill", "scripts", "input/designs", "skills"]) {
+for (const relativePath of ["AGENTS.md", "README.md", "scripts", "input/designs", "skills"]) {
   await copyEntry(relativePath);
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "figma-shopify-flow-starter",
+  "name": "figma-shopify-pipeline",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,15 +8,10 @@
   ],
   "scripts": {
     "fetch:figma": "node scripts/fetch-figma-file.mjs",
-    "generate": "node scripts/generate-shopify-site.mjs",
-    "build:preview": "node scripts/build-site-preview.mjs",
     "preview": "node scripts/serve-preview.mjs",
     "validate:shopify": "node scripts/validate-shopify.mjs",
     "push:preview": "node scripts/push-preview-theme.mjs",
     "test:shopify-preview": "node scripts/test-shopify-preview.mjs",
-    "test:preview:home": "node scripts/test-home-preview.mjs",
-    "test:preview": "node scripts/test-site-preview.mjs",
-    "flow": "npm run generate && npm run build:preview && npm run test:preview:home && npm run test:preview",
     "desktop:dev": "npm run dev --workspace @figma-shopify-flow/desktop",
     "desktop:build": "npm run build --workspace @figma-shopify-flow/desktop",
     "desktop:test": "npm run test --workspace @figma-shopify-flow/desktop",

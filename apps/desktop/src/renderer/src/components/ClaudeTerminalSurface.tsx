@@ -1,18 +1,34 @@
-import { memo, useEffect, useEffectEvent, useRef, useState } from "react";
+import type { LaunchClaudeContext } from "../../../shared/setup-types";
+import { memo, useEffect, useRef, useState } from "react";
 
 interface ClaudeTerminalSurfaceProps {
   active: boolean;
-  storeDomain: string;
+  launchContext?: LaunchClaudeContext;
+  launchNonce: number;
   onStarted: () => void;
   onExit: () => void;
+  shouldLaunchSession: boolean;
 }
 
-function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain }: ClaudeTerminalSurfaceProps) {
+function ClaudeTerminalSurfaceComponent({ active, launchContext, launchNonce, onExit, onStarted, shouldLaunchSession }: ClaudeTerminalSurfaceProps) {
   const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const launchContextRef = useRef<LaunchClaudeContext | undefined>(launchContext);
+  const onExitRef = useRef(onExit);
+  const onStartedRef = useRef(onStarted);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const emitExit = useEffectEvent(onExit);
-  const emitStarted = useEffectEvent(onStarted);
+
+  useEffect(() => {
+    launchContextRef.current = launchContext;
+  }, [launchContext]);
+
+  useEffect(() => {
+    onExitRef.current = onExit;
+  }, [onExit]);
+
+  useEffect(() => {
+    onStartedRef.current = onStarted;
+  }, [onStarted]);
 
   useEffect(() => {
     if (!active || !surfaceRef.current) {
@@ -30,6 +46,16 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
     let lastTerminalSize: { cols: number; rows: number } | null = null;
     let terminalTextarea: HTMLTextAreaElement | null = null;
     let pasteTarget: HTMLElement | null = null;
+
+    const copySelection = async () => {
+      const selectedText = terminal?.hasSelection?.() ? terminal.getSelection?.() ?? "" : "";
+      if (!selectedText || disposed) {
+        return false;
+      }
+
+      await window.desktopApi.writeClipboardText(selectedText);
+      return true;
+    };
 
     const flushResize = () => {
       fitAddon?.fit();
@@ -81,12 +107,28 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
 
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault();
-      void pasteFromClipboard();
+      void (async () => {
+        const copied = await copySelection();
+        if (!copied) {
+          await pasteFromClipboard();
+        }
+      })();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      const isCopyShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c";
       const isPasteShortcut =
         ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") || (event.shiftKey && event.key === "Insert");
+
+      if (isCopyShortcut) {
+        if (!terminal?.hasSelection?.()) {
+          return;
+        }
+
+        event.preventDefault();
+        void copySelection();
+        return;
+      }
 
       if (!isPasteShortcut) {
         return;
@@ -110,16 +152,29 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
           return;
         }
 
+        const themeStyles = getComputedStyle(document.documentElement);
+        const background = themeStyles.getPropertyValue("--surface-muted").trim() || "#181512";
+        const foreground = themeStyles.getPropertyValue("--text").trim() || "#F4EDE3";
+        const accent = themeStyles.getPropertyValue("--accent").trim() || "#C88360";
+        const selection = "rgba(200, 131, 96, 0.24)";
+        const fontMono = themeStyles.getPropertyValue("--font-mono").trim() || "ui-monospace, SFMono-Regular, Consolas, monospace";
+
         terminal = new Terminal({
           theme: {
-            background: "#191714",
-            foreground: "#FBF7F0",
-            cursor: "#D97757",
-            selectionBackground: "#4E3A33"
+            background,
+            foreground,
+            cursor: accent,
+            selectionBackground: selection
           },
-          fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+          allowTransparency: false,
+          customGlyphs: false,
+          drawBoldTextInBrightColors: false,
+          fontFamily: fontMono,
           fontSize: 14,
+          letterSpacing: 0,
+          lineHeight: 1.15,
           cursorBlink: true,
+          smoothScrollDuration: 0,
           scrollback: 3000
         });
         fitAddon = new FitAddon();
@@ -140,16 +195,20 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
         offSystem = window.desktopApi.onTerminalSystem((data: string) => terminal?.writeln(`\r\n[system] ${data}\r\n`));
         offExit = window.desktopApi.onTerminalExit(() => {
           terminal?.writeln("\r\n[system] Claude session exited.\r\n");
-          emitExit();
+          onExitRef.current();
         });
 
         observer = new ResizeObserver(() => {
           scheduleResize();
         });
         observer.observe(surfaceRef.current);
-        terminal.writeln("[system] Starting Claude session...");
-        await window.desktopApi.launchClaudeTerminal({ storeDomain });
-        emitStarted();
+        if (shouldLaunchSession) {
+          terminal.writeln("[system] Starting Claude session...");
+          await window.desktopApi.launchClaudeTerminal(launchContextRef.current);
+        } else {
+          terminal.writeln("[system] Reattached to the running Claude session.");
+        }
+        onStartedRef.current();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Claude terminal failed to start.";
         if (!disposed) {
@@ -179,7 +238,7 @@ function ClaudeTerminalSurfaceComponent({ active, onExit, onStarted, storeDomain
       observer?.disconnect();
       terminal?.dispose();
     };
-  }, [active, storeDomain]);
+  }, [active, launchNonce, shouldLaunchSession]);
 
   if (!active) {
     return (

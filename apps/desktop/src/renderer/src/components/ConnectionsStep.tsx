@@ -1,5 +1,8 @@
 import type { RefObject } from "react";
 import type { CheckResult, SecretStatus } from "../../../shared/setup-types";
+import { ExpandableMessage } from "./ExpandableMessage";
+import { SecretFieldCard } from "./SecretFieldCard";
+import { TextField } from "./TextField";
 
 interface ConnectionFieldErrors {
   storeDomain?: string;
@@ -34,13 +37,6 @@ interface ConnectionsStepProps {
   designSlugRef: RefObject<HTMLInputElement | null>;
 }
 
-const formatSecretStatus = (secretStatus: SecretStatus | undefined) => {
-  if (!secretStatus) {
-    return "Unknown";
-  }
-  return secretStatus.stored ? "Stored" : "Not stored";
-};
-
 export function ConnectionsStep({
   busy,
   designSlugDraft,
@@ -67,15 +63,32 @@ export function ConnectionsStep({
   storefrontPasswordInput,
   storefrontPasswordStatus
 }: ConnectionsStepProps) {
+  const shopifySessionLabel =
+    shopifyAuthCheck?.status === "ready" ? "Ready" : shopifyAuthCheck?.status === "action_required" ? "Store issue" : "Needs login";
+  const shopifySessionTitle = shopifyAuthCheck?.status === "ready" ? "Shopify session ready" : "Shopify session";
+  const shopifySessionHint =
+    shopifyAuthCheck?.status === "ready"
+      ? "Shopify CLI is already signed in for this store."
+      : "Sign in only if this store has not been connected on this machine yet.";
+  const shouldOpenOptionalDetails = Boolean(figmaTokenStatus?.stored || figmaTokenInput.trim());
+
   return (
     <div className="connection-stack connections-step">
-      <div className="form-grid connections-form-grid">
-        <label>
-          <span>Shopify Store Domain</span>
-          <input
+      <section className="details-section">
+        <div className="details-section-header">
+          <div className="min-w-0">
+            <h4>Project details</h4>
+            <p className="details-section-copy">Fill in these three fields, then save.</p>
+          </div>
+        </div>
+
+        <div className="form-grid connections-form-grid">
+          <TextField
             ref={storeDomainRef}
             autoComplete="off"
+            error={errors.storeDomain}
             inputMode="url"
+            label="Shopify Store Domain"
             name="shopifyStoreDomain"
             placeholder="your-store.myshopify.com…"
             spellCheck={false}
@@ -83,15 +96,14 @@ export function ConnectionsStep({
             value={storeDomain}
             onChange={(event) => onChangeStoreDomain(event.target.value)}
           />
-          {errors.storeDomain ? <small className="field-error">{errors.storeDomain}</small> : null}
-        </label>
 
-        <label className="is-wide">
-          <span>Figma File URL</span>
-          <input
+          <TextField
             ref={figmaUrlRef}
             autoComplete="off"
+            error={errors.figmaUrl}
             inputMode="url"
+            label="Figma File URL"
+            labelClassName="is-wide"
             name="figmaUrl"
             placeholder="https://www.figma.com/design/FILE_KEY/Example…"
             spellCheck={false}
@@ -99,14 +111,12 @@ export function ConnectionsStep({
             value={figmaUrl}
             onChange={(event) => onChangeFigmaUrl(event.target.value)}
           />
-          {errors.figmaUrl ? <small className="field-error">{errors.figmaUrl}</small> : null}
-        </label>
 
-        <label>
-          <span>Project Name</span>
-          <input
+          <TextField
             ref={designSlugRef}
             autoComplete="off"
+            error={errors.designSlugDraft}
+            label="Project Name"
             name="designSlug"
             placeholder="my-project-name…"
             spellCheck={false}
@@ -114,98 +124,83 @@ export function ConnectionsStep({
             value={designSlugDraft}
             onChange={(event) => onChangeDesignSlugDraft(event.target.value)}
           />
-          {errors.designSlugDraft ? <small className="field-error">{errors.designSlugDraft}</small> : null}
-        </label>
-      </div>
+        </div>
 
-      <div className="secret-grid connections-secret-grid">
-        <article className="secret-card is-compact">
-          <div className="secret-header">
-            <div className="min-w-0">
-              <h4>Optional Figma API Token</h4>
-              <p>{figmaTokenStatus?.detail ?? "Secure storage status unavailable."}</p>
+        <div className="panel-actions details-primary-actions">
+          <button className="button button-action" type="button" disabled={busy} onClick={onSaveConnections}>
+            Save details
+          </button>
+        </div>
+      </section>
+
+      <section className="details-support-grid">
+        {shopifyAuthCheck ? (
+          <article className={`check-card is-compact connections-session-card${shopifyAuthCheck.status === "ready" ? " is-ready" : ""}`}>
+            <div className="check-row">
+              <div className="min-w-0">
+                <h4>{shopifySessionTitle}</h4>
+                <ExpandableMessage summaryLabel="Show session details" text={shopifyAuthCheck.detail} />
+              </div>
+              <span className={`status-chip${shopifyAuthCheck.status === "ready" ? " is-ready-pill" : ""}`}>
+                {shopifySessionLabel}
+              </span>
             </div>
-            <span className={`status-chip ${figmaTokenStatus?.stored ? "is-ready-pill" : ""}`}>{formatSecretStatus(figmaTokenStatus)}</span>
-          </div>
-          <input
-            className="secret-field"
-            autoComplete="off"
-            name="figmaToken"
-            placeholder="Only save this if a repo script needs FIGMA_TOKEN…"
-            spellCheck={false}
-            type="password"
-            value={figmaTokenInput}
-            onChange={(event) => onChangeFigmaTokenInput(event.target.value)}
+            <p className="hint-copy">{shopifySessionHint}</p>
+            <div className="panel-actions details-session-actions">
+              <button className="button button-secondary button-inline" type="button" disabled={busy || !storeDomain.trim()} onClick={onStartShopifyAuth}>
+                {shopifyAuthCheck?.status === "ready" ? "Recheck session" : "Start Shopify login"}
+              </button>
+            </div>
+          </article>
+        ) : null}
+
+        <SecretFieldCard
+          busy={busy}
+          clearLabel="Clear password"
+          description="Optional, but usually needed when the storefront preview is protected by a password page."
+          hint="If preview checks open a password page, save the storefront password here so the checks can continue."
+          inputLabel="Storefront password"
+          inputName="shopifyStorefrontPassword"
+          inputPlaceholder="Save this if the storefront preview is password-protected…"
+          inputValue={storefrontPasswordInput}
+          isOptional
+          saveDisabled={!storefrontPasswordInput.trim()}
+          saveLabel="Save password"
+          status={storefrontPasswordStatus}
+          title="Storefront Password"
+          onChange={onChangeStorefrontPasswordInput}
+          onClear={onClearStorefrontPassword}
+          onSave={onSaveStorefrontPassword}
+        />
+      </section>
+
+      <details className="details-optional-panel" open={shouldOpenOptionalDetails}>
+        <summary>
+          <span>Advanced optional access</span>
+          <small>The Figma API token is only for older repo scripts that explicitly ask for FIGMA_TOKEN.</small>
+        </summary>
+
+        <div className="secret-grid connections-secret-grid">
+          <SecretFieldCard
+            busy={busy}
+            clearLabel="Clear token"
+            description={figmaTokenStatus?.detail ?? "Vault status unavailable."}
+            hint="Only for repo scripts that still ask for FIGMA_TOKEN."
+            inputLabel="Figma API token"
+            inputName="figmaToken"
+            inputPlaceholder="Paste a token only if a script asks for it…"
+            inputValue={figmaTokenInput}
+            isOptional
+            saveDisabled={!figmaTokenInput.trim()}
+            saveLabel="Save token"
+            status={figmaTokenStatus}
+            title="Figma API Token"
+            onChange={onChangeFigmaTokenInput}
+            onClear={onClearFigmaToken}
+            onSave={onSaveFigmaToken}
           />
-          <p className="hint-copy">Claude and Codex Figma auth usually make this unnecessary. Use it only for token-based repo flows.</p>
-          <div className="button-row">
-            <button className="button button-inline" type="button" disabled={busy || !figmaTokenInput.trim()} onClick={onSaveFigmaToken}>
-              Save API Token
-            </button>
-            <button className="button button-secondary button-inline" type="button" disabled={busy} onClick={onClearFigmaToken}>
-              Clear API Token
-            </button>
-          </div>
-        </article>
-
-        <article className="secret-card is-compact">
-          <div className="secret-header">
-            <div className="min-w-0">
-              <h4>Storefront Password</h4>
-              <p>Optional. Only needed for password-protected Shopify previews and storefront checks.</p>
-            </div>
-            <span className={`status-chip ${storefrontPasswordStatus?.stored ? "is-ready-pill" : ""}`}>{formatSecretStatus(storefrontPasswordStatus)}</span>
-          </div>
-          <input
-            className="secret-field"
-            autoComplete="off"
-            name="shopifyStorefrontPassword"
-            placeholder="Only save this if the storefront preview shows a password page…"
-            spellCheck={false}
-            type="password"
-            value={storefrontPasswordInput}
-            onChange={(event) => onChangeStorefrontPasswordInput(event.target.value)}
-          />
-          <p className="hint-copy">
-            Most stores do not need this. Use it only when Playwright or storefront preview checks must pass through a password page.
-          </p>
-          <div className="button-row">
-            <button className="button button-inline" type="button" disabled={busy || !storefrontPasswordInput.trim()} onClick={onSaveStorefrontPassword}>
-              Save Password
-            </button>
-            <button className="button button-secondary button-inline" type="button" disabled={busy} onClick={onClearStorefrontPassword}>
-              Clear Password
-            </button>
-          </div>
-        </article>
-      </div>
-
-      <div className="panel-actions">
-        <button className="button button-action" type="button" disabled={busy} onClick={onSaveConnections}>
-          Save Connection Context
-        </button>
-        <button className="button button-secondary button-action" type="button" disabled={busy || !storeDomain.trim()} onClick={onStartShopifyAuth}>
-          {shopifyAuthCheck?.status === "ready" ? "Check Shopify Session" : "Start Shopify Login"}
-        </button>
-      </div>
-
-      {shopifyAuthCheck ? (
-        <article className="check-card is-compact connections-session-card">
-          <div className="check-row">
-            <div className="min-w-0">
-              <h4>Shopify Session</h4>
-              <p>{shopifyAuthCheck.detail}</p>
-            </div>
-            <span className={`status-chip${shopifyAuthCheck.status === "ready" ? " is-ready-pill" : ""}`}>
-              {shopifyAuthCheck.status === "ready" ? "Authenticated" : "Needs Login"}
-            </span>
-          </div>
-          <p className="hint-copy">
-            This checks the saved store domain first. If Shopify CLI is already logged in for this store, no browser opens.
-            If not, the app starts the Shopify login flow.
-          </p>
-        </article>
-      ) : null}
+        </div>
+      </details>
     </div>
   );
 }
