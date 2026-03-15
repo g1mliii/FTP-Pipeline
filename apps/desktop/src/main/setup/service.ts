@@ -646,11 +646,6 @@ export class SetupService {
       };
     }
 
-    const contextModePath = path.join(this.workspaceRoot, "tools", "context-mode");
-    // Non-fatal: better-sqlite3 requires native compilation; if it fails here
-    // configureClaude() will retry and report a clearer error.
-    await runCommand("npm", ["install", "--prefix", contextModePath], { cwd: this.workspaceRoot });
-
     const playwrightInstall = await runCommand("npx", ["playwright", "install", "chromium"], { cwd: this.workspaceRoot });
     if (!playwrightInstall.ok) {
       return {
@@ -732,18 +727,8 @@ export class SetupService {
     }
 
     // Ensure context-mode deps are installed (native build may not have succeeded during installDependencies)
-    const contextModePath = path.join(this.workspaceRoot, "tools", "context-mode");
-    const contextModeDepsInstall = await runCommand("npm", ["install", "--prefix", contextModePath], { cwd: this.workspaceRoot });
-    if (!contextModeDepsInstall.ok) {
-      return {
-        ok: false,
-        message: "Context Mode MCP dependencies failed to install. Install Visual C++ Build Tools and retry.",
-        outcome: contextModeDepsInstall,
-        snapshot: await this.runChecks()
-      };
-    }
-
     // Register context-mode MCP server (idempotent — re-add if already present)
+    // node_modules are pre-bundled at build time — no runtime npm install needed.
     const contextModeServerPath = path.join(this.workspaceRoot, "tools", "context-mode", "index.mjs");
     await runCommand("claude", ["mcp", "remove", "context-mode", "--scope", "project"], { cwd: this.workspaceRoot });
     const contextModeInstall = await runCommand(

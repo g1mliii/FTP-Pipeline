@@ -1,4 +1,5 @@
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -51,7 +52,12 @@ for (const relativePath of ["AGENTS.md", "README.md", "scripts", "skills", "tool
   await copyEntry(relativePath);
 }
 await copyEntryIfExists("input/designs");
-await rm(path.join(targetRoot, "tools", "context-mode", "node_modules"), { recursive: true, force: true });
+
+// Install context-mode deps at build time so they are pre-bundled.
+// sql.js is pure WASM/JS — no native binaries — safe to bundle for all platforms.
+const contextModeTarget = path.join(targetRoot, "tools", "context-mode");
+await rm(path.join(contextModeTarget, "node_modules"), { recursive: true, force: true });
+execFileSync("npm", ["install", "--prefix", contextModeTarget], { stdio: "inherit" });
 
 // Patch AGENTS.md to prepend the Key Documents header if not already present
 const agentsPath = path.join(targetRoot, "AGENTS.md");
