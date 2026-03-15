@@ -2,22 +2,35 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import Database from "better-sqlite3";
-import { join } from "node:path";
+import { createRequire } from "node:module";
+import { join, dirname } from "node:path";
 import { homedir } from "node:os";
-import { mkdirSync, existsSync } from "node:fs";
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
-// Store DB globally under ~/.claude/context-mode/
+const require = createRequire(import.meta.url);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load sql.js WASM from the local node_modules
+const initSqlJs = require("sql.js");
+const wasmPath = join(__dirname, "node_modules", "sql.js", "dist", "sql-wasm.wasm");
+const SQL = await initSqlJs({ wasmBinary: readFileSync(wasmPath) });
+
+// Store DB at ~/.claude/context-mode/context.db
 const DB_DIR = join(homedir(), ".claude", "context-mode");
 if (!existsSync(DB_DIR)) mkdirSync(DB_DIR, { recursive: true });
 const DB_PATH = join(DB_DIR, "context.db");
 
-const db = new Database(DB_PATH);
-db.pragma("journal_mode = WAL");
-db.pragma("synchronous = NORMAL");
+// Load existing DB from disk or create new
+const db = existsSync(DB_PATH)
+  ? new SQL.Database(readFileSync(DB_PATH))
+  : new SQL.Database();
 
-db.exec(`
+// Persist DB to disk after writes
+const persist = () => writeFileSync(DB_PATH, db.export());
+
+db.run(`
   CREATE TABLE IF NOT EXISTS content (
     id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
@@ -25,26 +38,8 @@ db.exec(`
     source TEXT,
     body TEXT NOT NULL,
     body_size INTEGER NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT (datetime('now'))
   );
-
-  CREATE VIRTUAL TABLE IF NOT EXISTS content_fts USING fts5(
-    id UNINDEXED,
-    label,
-    body,
-    content='content',
-    content_rowid='rowid'
-  );
-
-  CREATE TRIGGER IF NOT EXISTS content_ai AFTER INSERT ON content BEGIN
-    INSERT INTO content_fts(rowid, id, label, body)
-    VALUES (new.rowid, new.id, new.label, new.body);
-  END;
-
-  CREATE TRIGGER IF NOT EXISTS content_ad AFTER DELETE ON content BEGIN
-    INSERT INTO content_fts(content_fts, rowid, id, label, body)
-    VALUES ('delete', old.rowid, old.id, old.label, old.body);
-  END;
 
   CREATE TABLE IF NOT EXISTS checkpoints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +47,7 @@ db.exec(`
     task TEXT NOT NULL,
     active_files TEXT,
     notes TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS decisions (
@@ -61,42 +56,28 @@ db.exec(`
     decision TEXT NOT NULL,
     outcome TEXT NOT NULL,
     tags TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT (datetime('now'))
   );
 `);
+persist();
 
 // Use cwd as project ID so sessions are scoped per workspace
 const PROJECT_ID = process.env.CONTEXT_MODE_PROJECT || process.cwd();
 
-const stmts = {
-  insertContent: db.prepare(
-    "INSERT OR REPLACE INTO content (id, project_id, label, source, body, body_size) VALUES (?, ?, ?, ?, ?, ?)"
-  ),
-  getContent: db.prepare("SELECT * FROM content WHERE id = ?"),
-  searchContent: db.prepare(`
-    SELECT c.id, c.label, c.source, c.body_size, c.created_at,
-           snippet(content_fts, 2, '>>>', '<<<', '...', 48) as snippet
-    FROM content_fts
-    JOIN content c ON c.id = content_fts.id
-    WHERE content_fts MATCH ? AND c.project_id = ?
-    ORDER BY rank
-    LIMIT ?
-  `),
-  listContent: db.prepare(
-    "SELECT id, label, source, body_size, created_at FROM content WHERE project_id = ? ORDER BY created_at DESC LIMIT 30"
-  ),
-  insertCheckpoint: db.prepare(
-    "INSERT INTO checkpoints (project_id, task, active_files, notes) VALUES (?, ?, ?, ?)"
-  ),
-  latestCheckpoint: db.prepare(
-    "SELECT * FROM checkpoints WHERE project_id = ? ORDER BY created_at DESC LIMIT 1"
-  ),
-  insertDecision: db.prepare(
-    "INSERT INTO decisions (project_id, decision, outcome, tags) VALUES (?, ?, ?, ?)"
-  ),
-  getDecisions: db.prepare(
-    "SELECT * FROM decisions WHERE project_id = ? ORDER BY created_at DESC LIMIT 100"
-  ),
+// Helper: run a SELECT and return rows as objects
+const query = (sql, params = []) => {
+  const stmt = db.prepare(sql);
+  stmt.bind(params);
+  const rows = [];
+  while (stmt.step()) rows.push(stmt.getAsObject());
+  stmt.free();
+  return rows;
+};
+
+// Helper: run INSERT/UPDATE/DELETE
+const run = (sql, params = []) => {
+  db.run(sql, params);
+  persist();
 };
 
 // ─── Server ─────────────────────────────────────────────────────────────────
@@ -128,11 +109,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "cm_search",
       description:
-        "Full-text search across all content indexed in this project session. Use instead of re-reading files — search for the specific part you need.",
+        "Search across all content indexed in this project session. Use instead of re-reading files — search for the specific part you need.",
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Search terms (FTS5 syntax supported)" },
+          query: { type: "string", description: "Keywords to search for in indexed content" },
           limit: { type: "number", description: "Max results to return (default: 5)" },
         },
         required: ["query"],
@@ -233,64 +214,74 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const id = randomUUID().slice(0, 8);
       const body = String(args.content);
       const bodySize = Buffer.byteLength(body, "utf8");
-      stmts.insertContent.run(
-        id,
-        PROJECT_ID,
-        String(args.label),
-        args.source ? String(args.source) : null,
-        body,
-        bodySize
+      run(
+        "INSERT OR REPLACE INTO content (id, project_id, label, source, body, body_size) VALUES (?, ?, ?, ?, ?, ?)",
+        [id, PROJECT_ID, String(args.label), args.source ? String(args.source) : null, body, bodySize]
       );
 
       const lines = body.split("\n").length;
       const tokenEstimate = Math.ceil(bodySize / 4);
-      const summaryTokens = 20; // rough tokens for the returned summary
-      const savedTokens = tokenEstimate - summaryTokens;
+      const savedTokens = tokenEstimate - 20;
       const reduction = Math.round((savedTokens / tokenEstimate) * 100);
 
       return {
-        content: [
-          {
-            type: "text",
-            text: `[INDEXED:${id}] "${args.label}" — ${(bodySize / 1024).toFixed(1)}KB / ${lines} lines stored locally.\nEstimated context saved: ~${savedTokens.toLocaleString()} tokens (${reduction}% reduction).\nUse cm_search or cm_retrieve("${id}") to access.`,
-          },
-        ],
+        content: [{
+          type: "text",
+          text: `[INDEXED:${id}] "${args.label}" — ${(bodySize / 1024).toFixed(1)}KB / ${lines} lines stored locally.\nEstimated context saved: ~${savedTokens.toLocaleString()} tokens (${reduction}% reduction).\nUse cm_search or cm_retrieve("${id}") to access.`,
+        }],
       };
     }
 
     if (name === "cm_search") {
       const limit = Number(args.limit ?? 5);
-      let results;
-      try {
-        results = stmts.searchContent.all(String(args.query), PROJECT_ID, limit);
-      } catch {
-        return { content: [{ type: "text", text: "No results or invalid FTS5 query syntax." }] };
-      }
+      const terms = String(args.query).toLowerCase().split(/\s+/).filter(Boolean);
+      const rows = query(
+        "SELECT id, label, source, body, body_size, created_at FROM content WHERE project_id = ? ORDER BY created_at DESC LIMIT 100",
+        [PROJECT_ID]
+      );
 
-      if (!results.length) {
+      const scored = rows
+        .map((r) => {
+          const haystack = (r.label + " " + r.body).toLowerCase();
+          const hits = terms.filter((t) => haystack.includes(t)).length;
+          return { ...r, hits };
+        })
+        .filter((r) => r.hits > 0)
+        .sort((a, b) => b.hits - a.hits)
+        .slice(0, limit);
+
+      if (!scored.length) {
         return { content: [{ type: "text", text: "No indexed content matched that query." }] };
       }
 
-      const text = results
-        .map(
-          (r) =>
-            `[${r.id}] ${r.label}${r.source ? ` (${r.source})` : ""} — ${(r.body_size / 1024).toFixed(1)}KB\n  ${r.snippet}`
-        )
+      const text = scored
+        .map((r) => {
+          // Extract a snippet around the first matching term
+          const body = r.body.toLowerCase();
+          const firstTerm = terms.find((t) => body.includes(t));
+          const idx = firstTerm ? body.indexOf(firstTerm) : 0;
+          const start = Math.max(0, idx - 80);
+          const snippet = r.body.slice(start, start + 200).replace(/\n/g, " ").trim();
+          return `[${r.id}] ${r.label}${r.source ? ` (${r.source})` : ""} — ${(r.body_size / 1024).toFixed(1)}KB\n  ...${snippet}...`;
+        })
         .join("\n\n");
 
       return { content: [{ type: "text", text }] };
     }
 
     if (name === "cm_retrieve") {
-      const row = stmts.getContent.get(String(args.id));
-      if (!row) {
+      const rows = query("SELECT body FROM content WHERE id = ?", [String(args.id)]);
+      if (!rows.length) {
         return { content: [{ type: "text", text: `No content found for ID: ${args.id}` }] };
       }
-      return { content: [{ type: "text", text: row.body }] };
+      return { content: [{ type: "text", text: rows[0].body }] };
     }
 
     if (name === "cm_list") {
-      const rows = stmts.listContent.all(PROJECT_ID);
+      const rows = query(
+        "SELECT id, label, source, body_size, created_at FROM content WHERE project_id = ? ORDER BY created_at DESC LIMIT 30",
+        [PROJECT_ID]
+      );
       if (!rows.length) {
         return { content: [{ type: "text", text: "No content indexed yet for this project." }] };
       }
@@ -301,28 +292,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (name === "cm_checkpoint_save") {
-      stmts.insertCheckpoint.run(
-        PROJECT_ID,
-        String(args.task),
-        args.active_files ? JSON.stringify(args.active_files) : null,
-        args.notes ? String(args.notes) : null
+      run(
+        "INSERT INTO checkpoints (project_id, task, active_files, notes) VALUES (?, ?, ?, ?)",
+        [
+          PROJECT_ID,
+          String(args.task),
+          args.active_files ? JSON.stringify(args.active_files) : null,
+          args.notes ? String(args.notes) : null,
+        ]
       );
       return {
-        content: [
-          {
-            type: "text",
-            text: "✓ Checkpoint saved. After /compact, run cm_checkpoint_load to restore full session context.",
-          },
-        ],
+        content: [{ type: "text", text: "✓ Checkpoint saved. After /compact, run cm_checkpoint_load to restore full session context." }],
       };
     }
 
     if (name === "cm_checkpoint_load") {
-      const cp = stmts.latestCheckpoint.get(PROJECT_ID);
-      if (!cp) {
+      const rows = query(
+        "SELECT * FROM checkpoints WHERE project_id = ? ORDER BY created_at DESC LIMIT 1",
+        [PROJECT_ID]
+      );
+      if (!rows.length) {
         return { content: [{ type: "text", text: "No checkpoint found for this project." }] };
       }
-
+      const cp = rows[0];
       const files = cp.active_files ? JSON.parse(cp.active_files) : [];
       const lines = [
         `## Session Checkpoint — ${cp.created_at}`,
@@ -333,48 +325,47 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       ]
         .filter(Boolean)
         .join("\n");
-
       return { content: [{ type: "text", text: lines }] };
     }
 
     if (name === "cm_track_decision") {
-      stmts.insertDecision.run(
-        PROJECT_ID,
-        String(args.decision),
-        String(args.outcome),
-        args.tags ? JSON.stringify(args.tags) : null
+      run(
+        "INSERT INTO decisions (project_id, decision, outcome, tags) VALUES (?, ?, ?, ?)",
+        [
+          PROJECT_ID,
+          String(args.decision),
+          String(args.outcome),
+          args.tags ? JSON.stringify(args.tags) : null,
+        ]
       );
       return { content: [{ type: "text", text: `Decision recorded [${args.outcome}].` }] };
     }
 
     if (name === "cm_decisions_get") {
-      let decisions = stmts.getDecisions.all(PROJECT_ID);
+      let rows = query(
+        "SELECT * FROM decisions WHERE project_id = ? ORDER BY created_at DESC LIMIT 100",
+        [PROJECT_ID]
+      );
 
       if (args.tag) {
-        decisions = decisions.filter((d) => {
-          try {
-            return JSON.parse(d.tags || "[]").includes(args.tag);
-          } catch {
-            return false;
-          }
+        rows = rows.filter((d) => {
+          try { return JSON.parse(d.tags || "[]").includes(args.tag); } catch { return false; }
         });
       }
-
       if (args.outcome) {
-        decisions = decisions.filter((d) => d.outcome === args.outcome);
+        rows = rows.filter((d) => d.outcome === args.outcome);
       }
 
-      if (!decisions.length) {
+      if (!rows.length) {
         return { content: [{ type: "text", text: "No decisions recorded yet." }] };
       }
 
-      const text = decisions
+      const text = rows
         .map((d) => {
           const tags = d.tags ? JSON.parse(d.tags) : [];
           return `[${d.outcome.toUpperCase()}] ${d.decision}${tags.length ? ` (${tags.join(", ")})` : ""} — ${d.created_at}`;
         })
         .join("\n");
-
       return { content: [{ type: "text", text }] };
     }
 
