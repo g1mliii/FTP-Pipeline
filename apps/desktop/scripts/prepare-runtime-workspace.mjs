@@ -57,8 +57,7 @@ await copyEntryIfExists("input/designs");
 // sql.js is pure WASM/JS — no native binaries — safe to bundle for all platforms.
 const contextModeTarget = path.join(targetRoot, "tools", "context-mode");
 await rm(path.join(contextModeTarget, "node_modules"), { recursive: true, force: true });
-const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
-execFileSync(npmCmd, ["install", "--prefix", contextModeTarget], { stdio: "inherit" });
+execFileSync("npm", ["install", "--prefix", contextModeTarget], { stdio: "inherit", shell: true });
 
 // Patch AGENTS.md to prepend the Key Documents header if not already present
 const agentsPath = path.join(targetRoot, "AGENTS.md");
