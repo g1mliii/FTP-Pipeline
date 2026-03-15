@@ -44,7 +44,10 @@
       "Bash(cmd.exe /c \"where gh\" 2>&1)",
       "Bash(cmd.exe /c \"gh --version\" 2>&1)",
       "Bash(winget install:*)",
-      "Bash(export:*)"
+      "Bash(export:*)",
+      "Bash(wait:*)",
+      "Bash(which wine:*)",
+      "Bash(git add:*)"
     ]
   }
 }
