@@ -1,3 +1,13 @@
+## Key Documents
+
+- `CLAUDE.md` — Project architecture, build commands, and quick reference (this file)
+- `AGENT.md` — Development workflow and engineering standards
+- `IMPLEMENTATION_PLAN.md` — Phase-by-phase roadmap with verification steps
+- `tasks/todo.md` — Current work tracking
+- `tasks/lessons.md` — Mistakes and corrections log
+
+---
+
 ## Design Context
 This file should only impact the UI creation of the desktop wrapper under `apps/desktop/`, not the generated storefront output.
 The storefront-conversion goal remains: take the Figma design and convert it into Shopify as faithfully as possible. This file should not be used to reinterpret or restyle the generated Shopify UI.

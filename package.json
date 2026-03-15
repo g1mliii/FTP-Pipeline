@@ -21,7 +21,9 @@
     "desktop:dist:win": "npm run dist:win --workspace @figma-shopify-flow/desktop",
     "desktop:dist:mac": "npm run dist:mac --workspace @figma-shopify-flow/desktop",
     "desktop:dist:mac:publish": "npm run dist:mac:publish --workspace @figma-shopify-flow/desktop",
-    "desktop:release:mac": "npm run release:mac --workspace @figma-shopify-flow/desktop"
+    "desktop:release:mac": "npm run release:mac --workspace @figma-shopify-flow/desktop",
+    "desktop:dist:win:publish": "npm run dist:win:publish --workspace @figma-shopify-flow/desktop",
+    "desktop:release:win": "npm run release:win --workspace @figma-shopify-flow/desktop"
   },
   "dependencies": {
     "playwright": "^1.58.2"

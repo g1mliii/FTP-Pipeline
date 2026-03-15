@@ -18,10 +18,12 @@
     "prepare:dist": "npm run prepare:runtime && npm run build:icons",
     "pack": "npm run prepare:dist && npm run build && electron-builder --dir",
     "dist": "npm run prepare:dist && npm run build && electron-builder",
-    "dist:win": "npm run prepare:dist && npm run build && electron-builder --win nsis",
+    "dist:win": "npm run prepare:dist && npm run build && electron-builder --win nsis --publish never",
     "dist:mac": "npm run prepare:dist && npm run build && electron-builder --mac",
     "dist:mac:publish": "npm run prepare:dist && npm run build && electron-builder --mac --publish always",
-    "release:mac": "npm run dist:mac && node scripts/publish-github-release.mjs"
+    "release:mac": "npm run dist:mac && node scripts/publish-github-release.mjs",
+    "dist:win:publish": "npm run prepare:dist && npm run build && electron-builder --win nsis --publish always",
+    "release:win": "npm run dist:win && node scripts/publish-github-release-win.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",

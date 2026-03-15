@@ -38,7 +38,13 @@
       "Bash(gh auth:*)",
       "Bash(security find-generic-password:*)",
       "Bash(security dump-keychain:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(git log:*)",
+      "Bash(where gh:*)",
+      "Bash(cmd.exe /c \"where gh\" 2>&1)",
+      "Bash(cmd.exe /c \"gh --version\" 2>&1)",
+      "Bash(winget install:*)",
+      "Bash(export:*)"
     ]
   }
 }
