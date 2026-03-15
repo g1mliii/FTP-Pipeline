@@ -29,7 +29,7 @@ export function AgentStep({
   const isClaude = activeProvider === "claude";
   const unresolvedChecks = checks.filter((item) => item.status !== "ready");
   const claudeSetupReady = checks
-    .filter((item) => ["claudeCli", "claudeSkill", "claudePlaywright"].includes(item.id))
+    .filter((item) => ["claudeCli", "claudeSkill", "claudePlaywright", "claudeContextMode"].includes(item.id))
     .every((item) => item.status === "ready");
   const codexSetupReady = checks
     .filter((item) => ["codexCli", "codexFigmaMcp", "codexPlaywrightMcp"].includes(item.id))

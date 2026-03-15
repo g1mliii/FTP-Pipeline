@@ -647,15 +647,9 @@ export class SetupService {
     }
 
     const contextModePath = path.join(this.workspaceRoot, "tools", "context-mode");
-    const contextModeInstall = await runCommand("npm", ["install", "--prefix", contextModePath], { cwd: this.workspaceRoot });
-    if (!contextModeInstall.ok) {
-      return {
-        ok: false,
-        message: "Context Mode MCP dependencies failed to install.",
-        outcome: contextModeInstall,
-        snapshot: await this.runChecks()
-      };
-    }
+    // Non-fatal: better-sqlite3 requires native compilation; if it fails here
+    // configureClaude() will retry and report a clearer error.
+    await runCommand("npm", ["install", "--prefix", contextModePath], { cwd: this.workspaceRoot });
 
     const playwrightInstall = await runCommand("npx", ["playwright", "install", "chromium"], { cwd: this.workspaceRoot });
     if (!playwrightInstall.ok) {
@@ -733,6 +727,18 @@ export class SetupService {
         ok: false,
         message: "Claude Playwright integration installation failed.",
         outcome: playwrightInstall,
+        snapshot: await this.runChecks()
+      };
+    }
+
+    // Ensure context-mode deps are installed (native build may not have succeeded during installDependencies)
+    const contextModePath = path.join(this.workspaceRoot, "tools", "context-mode");
+    const contextModeDepsInstall = await runCommand("npm", ["install", "--prefix", contextModePath], { cwd: this.workspaceRoot });
+    if (!contextModeDepsInstall.ok) {
+      return {
+        ok: false,
+        message: "Context Mode MCP dependencies failed to install. Install Visual C++ Build Tools and retry.",
+        outcome: contextModeDepsInstall,
         snapshot: await this.runChecks()
       };
     }
