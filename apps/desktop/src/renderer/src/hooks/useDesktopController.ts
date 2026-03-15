@@ -98,8 +98,8 @@ export function useDesktopController() {
     () =>
       snapshot?.checks.filter((item) =>
         activeProvider === "claude"
-          ? ["claudeCli", "claudeAuth", "claudeSkill", "claudeFigma", "claudePlaywright"].includes(item.id)
-          : ["codexCli", "codexAuth", "codexFigmaMcp", "codexPlaywrightMcp"].includes(item.id)
+          ? ["claudeCli", "claudeAuth", "claudeSkill", "claudeFigma", "claudePlaywright", "claudeContextMode"].includes(item.id)
+          : ["codexCli", "codexAuth", "codexFigmaMcp", "codexPlaywrightMcp", "codexContextModeMcp"].includes(item.id)
       ) ?? [],
     [activeProvider, snapshot?.checks]
   );
