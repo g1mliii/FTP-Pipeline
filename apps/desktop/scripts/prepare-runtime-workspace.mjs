@@ -36,12 +36,21 @@ const copyEntry = async (relativePath) => {
   });
 };
 
+const copyEntryIfExists = async (relativePath) => {
+  try {
+    await copyEntry(relativePath);
+  } catch (err) {
+    if (err.code !== "ENOENT") throw err;
+  }
+};
+
 await rm(targetRoot, { recursive: true, force: true });
 await mkdir(targetRoot, { recursive: true });
 
-for (const relativePath of ["AGENTS.md", "README.md", "scripts", "input/designs", "skills", "tools/context-mode"]) {
+for (const relativePath of ["AGENTS.md", "README.md", "scripts", "skills", "tools/context-mode"]) {
   await copyEntry(relativePath);
 }
+await copyEntryIfExists("input/designs");
 await rm(path.join(targetRoot, "tools", "context-mode", "node_modules"), { recursive: true, force: true });
 
 // Patch AGENTS.md to prepend the Key Documents header if not already present
