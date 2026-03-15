@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "context-mode": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/Users/subaigsuri/ftp/FTP-Pipeline/tools/context-mode/index.mjs"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -726,9 +726,20 @@ export class SetupService {
       };
     }
 
-    // Ensure context-mode deps are installed (native build may not have succeeded during installDependencies)
+    // Install context-mode deps if not already present (no-op in packaged builds
+    // where node_modules are pre-bundled; installs on first run in dev).
+    const contextModePath = path.join(this.workspaceRoot, "tools", "context-mode");
+    const contextModeDepsInstall = await runCommand("npm", ["install", "--prefix", contextModePath], { cwd: this.workspaceRoot });
+    if (!contextModeDepsInstall.ok) {
+      return {
+        ok: false,
+        message: "Context Mode MCP dependencies failed to install.",
+        outcome: contextModeDepsInstall,
+        snapshot: await this.runChecks()
+      };
+    }
+
     // Register context-mode MCP server (idempotent — re-add if already present)
-    // node_modules are pre-bundled at build time — no runtime npm install needed.
     const contextModeServerPath = path.join(this.workspaceRoot, "tools", "context-mode", "index.mjs");
     await runCommand("claude", ["mcp", "remove", "context-mode", "--scope", "project"], { cwd: this.workspaceRoot });
     const contextModeInstall = await runCommand(
