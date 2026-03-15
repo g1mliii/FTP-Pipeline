@@ -44,7 +44,6 @@ function ClaudeTerminalSurfaceComponent({ active, launchContext, launchNonce, on
     let offExit: () => void = () => {};
     let resizeFrame: number | null = null;
     let lastTerminalSize: { cols: number; rows: number } | null = null;
-    let terminalTextarea: HTMLTextAreaElement | null = null;
     let pasteTarget: HTMLElement | null = null;
 
     const copySelection = async () => {
@@ -115,27 +114,27 @@ function ClaudeTerminalSurfaceComponent({ active, launchContext, launchNonce, on
       })();
     };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isCopyShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c";
-      const isPasteShortcut =
-        ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") || (event.shiftKey && event.key === "Insert");
+    const attachKeyHandler = () => {
+      terminal.attachCustomKeyEventHandler((event: KeyboardEvent) => {
+        if (event.type !== "keydown") return true;
 
-      if (isCopyShortcut) {
-        if (!terminal?.hasSelection?.()) {
-          return;
+        const isCopy = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c";
+        const isPaste =
+          ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") ||
+          (event.shiftKey && event.key === "Insert");
+
+        if (isCopy && terminal.hasSelection()) {
+          void copySelection();
+          return false; // block xterm from sending \x03 (SIGINT) to pty
         }
 
-        event.preventDefault();
-        void copySelection();
-        return;
-      }
+        if (isPaste) {
+          void pasteFromClipboard();
+          return false; // block xterm from sending \x16 to pty
+        }
 
-      if (!isPasteShortcut) {
-        return;
-      }
-
-      event.preventDefault();
-      void pasteFromClipboard();
+        return true;
+      });
     };
 
     const setup = async () => {
@@ -179,12 +178,11 @@ function ClaudeTerminalSurfaceComponent({ active, launchContext, launchNonce, on
         });
         fitAddon = new FitAddon();
         terminal.loadAddon(fitAddon);
+        attachKeyHandler();
         terminal.open(surfaceRef.current);
         pasteTarget = surfaceRef.current;
-        terminalTextarea = surfaceRef.current.querySelector("textarea");
         pasteTarget.addEventListener("paste", handlePaste);
         pasteTarget.addEventListener("contextmenu", handleContextMenu);
-        terminalTextarea?.addEventListener("keydown", handleKeyDown);
         scheduleResize();
         terminal.focus();
         terminal.onData((data: string) => {
@@ -234,7 +232,6 @@ function ClaudeTerminalSurfaceComponent({ active, launchContext, launchNonce, on
       offExit();
       pasteTarget?.removeEventListener("paste", handlePaste);
       pasteTarget?.removeEventListener("contextmenu", handleContextMenu);
-      terminalTextarea?.removeEventListener("keydown", handleKeyDown);
       observer?.disconnect();
       terminal?.dispose();
     };

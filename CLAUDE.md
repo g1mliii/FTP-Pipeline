@@ -3,8 +3,10 @@
 - `CLAUDE.md` — Project architecture, build commands, and quick reference (this file)
 - `AGENT.md` — Development workflow and engineering standards
 - `IMPLEMENTATION_PLAN.md` — Phase-by-phase roadmap with verification steps
-- `tasks/todo.md` — Current work tracking
-- `tasks/lessons.md` — Mistakes and corrections log
+- `tasks/todo.md` — Current work tracking (**read this at the start of any pipeline task**)
+- `tasks/lessons.md` — Mistakes and corrections log (**read this at the start of any pipeline task**)
+
+> **Pipeline tasks**: Before writing any code, read `tasks/lessons.md` and write a run-specific checklist to `tasks/todo.md` covering every route, every section, and all four completion gates. Update it as you go. The pipeline is not done until every checkbox is cleared.
 
 ---
 

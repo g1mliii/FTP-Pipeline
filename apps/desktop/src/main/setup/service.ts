@@ -39,8 +39,10 @@ const CHECK_ORDER: CheckId[] = [
   "claudeSkill",
   "claudeFigma",
   "claudePlaywright",
+  "claudeContextMode",
   "codexFigmaMcp",
   "codexPlaywrightMcp",
+  "codexContextModeMcp",
   "shopifyAuth"
 ];
 
@@ -58,8 +60,10 @@ const CHECK_META: Record<CheckId, { label: string; required: boolean }> = {
   claudeSkill: { label: "Claude repo skill", required: true },
   claudeFigma: { label: "Claude Figma", required: true },
   claudePlaywright: { label: "Claude Playwright", required: true },
+  claudeContextMode: { label: "Claude Context Mode", required: true },
   codexFigmaMcp: { label: "Codex Figma MCP", required: false },
   codexPlaywrightMcp: { label: "Codex Playwright MCP", required: false },
+  codexContextModeMcp: { label: "Codex Context Mode MCP", required: false },
   shopifyAuth: { label: "Shopify auth", required: true }
 };
 
@@ -75,8 +79,10 @@ const VOLATILE_BOOTSTRAP_CHECKS = new Set<CheckId>([
   "claudeAuth",
   "claudeFigma",
   "claudePlaywright",
+  "claudeContextMode",
   "codexFigmaMcp",
   "codexPlaywrightMcp",
+  "codexContextModeMcp",
   "shopifyAuth"
 ]);
 
@@ -354,6 +360,7 @@ export class SetupService {
       claudeMcpList,
       codexFigmaCheck,
       codexPlaywrightCheck,
+      codexContextModeOutcome,
       shopifyAuthCheck
     ] = await Promise.all([
       runCommand("node", ["--version"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }),
@@ -375,6 +382,7 @@ export class SetupService {
       runCommand("claude", ["mcp", "list"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }),
       readCodexMcp(this.workspaceRoot, "figma"),
       readCodexMcp(this.workspaceRoot, "playwright"),
+      runCommand("codex", ["mcp", "get", "context-mode"], { cwd: this.workspaceRoot, timeoutMs: STATUS_CHECK_TIMEOUT_MS }),
       shopifyAuthPromise
     ]);
 
@@ -388,6 +396,7 @@ export class SetupService {
     const playwrightPlugin = parseClaudePluginList(claudePlugins.stdout, "playwright@claude-plugins-official");
     const figmaMcp = parseClaudeMcpStatus(claudeMcpList.stdout, "figma");
     const playwrightMcp = parseClaudeMcpStatus(claudeMcpList.stdout, "playwright");
+    const contextModeMcp = parseClaudeMcpStatus(claudeMcpList.stdout, "context-mode");
 
     checks.push(check("node", nodeVersion.ok ? "ready" : "error", nodeVersion.ok ? nodeVersion.stdout.trim() : nodeVersion.stderr || "Node.js missing.", nodeVersion.command));
     checks.push(check("npm", npmVersion.ok ? "ready" : "error", npmVersion.ok ? `npm ${npmVersion.stdout.trim()}` : npmVersion.stderr || "npm missing.", npmVersion.command));
@@ -416,8 +425,27 @@ export class SetupService {
         playwrightMcp.exists ? claudeMcpList.command : claudePlugins.command
       )
     );
+    checks.push(
+      check(
+        "claudeContextMode",
+        contextModeMcp.connected ? "ready" : "action_required",
+        contextModeMcp.connected ? "Context Mode MCP is connected." : "Context Mode MCP is not registered. Run Claude setup to install it.",
+        claudeMcpList.command
+      )
+    );
     checks.push(codexFigmaCheck);
     checks.push(codexPlaywrightCheck);
+    {
+      const parsedContextMode = parseCodexMcpGet(codexContextModeOutcome.stdout, "context-mode");
+      checks.push(
+        check(
+          "codexContextModeMcp",
+          codexContextModeOutcome.ok ? (parsedContextMode.enabled ? "ready" : "action_required") : "action_required",
+          codexContextModeOutcome.ok ? parsedContextMode.detail : "context-mode MCP is not configured.",
+          codexContextModeOutcome.command
+        )
+      );
+    }
     checks.push(shopifyAuthCheck);
 
     const runtimeStates: RuntimeState[] = [
@@ -428,7 +456,8 @@ export class SetupService {
         integrations: [
           figmaMcp.connected ? "figma" : "",
           playwrightMcp.connected || playwrightPlugin.enabled ? "playwright" : "",
-          skillReady ? "figma-to-shopify-pipeline" : ""
+          skillReady ? "figma-to-shopify-pipeline" : "",
+          contextModeMcp.connected ? "context-mode" : ""
         ].filter(Boolean),
         detail: parsedAuth.detail
       },
@@ -437,9 +466,9 @@ export class SetupService {
         installed: codexCheck.ok,
         authenticated: parsedCodexAuth.loggedIn,
         integrations: checks
-          .filter((item) => item.id === "codexFigmaMcp" || item.id === "codexPlaywrightMcp")
+          .filter((item) => item.id === "codexFigmaMcp" || item.id === "codexPlaywrightMcp" || item.id === "codexContextModeMcp")
           .filter((item) => item.status === "ready")
-          .map((item) => (item.id === "codexFigmaMcp" ? "figma" : "playwright")),
+          .map((item) => item.id === "codexFigmaMcp" ? "figma" : item.id === "codexPlaywrightMcp" ? "playwright" : "context-mode"),
         detail: parsedCodexAuth.detail
       }
     ];
@@ -617,6 +646,17 @@ export class SetupService {
       };
     }
 
+    const contextModePath = path.join(this.workspaceRoot, "tools", "context-mode");
+    const contextModeInstall = await runCommand("npm", ["install", "--prefix", contextModePath], { cwd: this.workspaceRoot });
+    if (!contextModeInstall.ok) {
+      return {
+        ok: false,
+        message: "Context Mode MCP dependencies failed to install.",
+        outcome: contextModeInstall,
+        snapshot: await this.runChecks()
+      };
+    }
+
     const playwrightInstall = await runCommand("npx", ["playwright", "install", "chromium"], { cwd: this.workspaceRoot });
     if (!playwrightInstall.ok) {
       return {
@@ -697,6 +737,23 @@ export class SetupService {
       };
     }
 
+    // Register context-mode MCP server (idempotent — re-add if already present)
+    const contextModeServerPath = path.join(this.workspaceRoot, "tools", "context-mode", "index.mjs");
+    await runCommand("claude", ["mcp", "remove", "context-mode", "--scope", "project"], { cwd: this.workspaceRoot });
+    const contextModeInstall = await runCommand(
+      "claude",
+      ["mcp", "add", "--scope", "project", "context-mode", "node", contextModeServerPath],
+      { cwd: this.workspaceRoot }
+    );
+    if (!contextModeInstall.ok && !contextModeInstall.stdout.includes("already")) {
+      return {
+        ok: false,
+        message: "Context Mode MCP registration failed.",
+        outcome: contextModeInstall,
+        snapshot: await this.runChecks()
+      };
+    }
+
     return {
       ok: true,
       message: "Claude setup completed.",
@@ -728,6 +785,20 @@ export class SetupService {
           ok: false,
           message: "Codex Playwright MCP configuration failed.",
           outcome: addPlaywright,
+          snapshot: await this.runChecks()
+        };
+      }
+    }
+
+    const codexContextModeGet = await runCommand("codex", ["mcp", "get", "context-mode"], { cwd: this.workspaceRoot });
+    if (!codexContextModeGet.ok) {
+      const contextModeServerPath = path.join(this.workspaceRoot, "tools", "context-mode", "index.mjs");
+      const addContextMode = await runCommand("codex", ["mcp", "add", "context-mode", "--", "node", contextModeServerPath], { cwd: this.workspaceRoot });
+      if (!addContextMode.ok) {
+        return {
+          ok: false,
+          message: "Codex Context Mode MCP configuration failed.",
+          outcome: addContextMode,
           snapshot: await this.runChecks()
         };
       }

@@ -1,0 +1,11 @@
+{
+  "name": "context-mode",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "MCP server for context virtualization, session continuity, and decision tracking in Claude Code",
+  "main": "index.mjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^11.0.0"
+  }
+}

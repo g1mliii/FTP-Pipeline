@@ -14,7 +14,8 @@ const pathExists = async (filePath) => {
 };
 
 export const loadRouteSpecs = async (designContext) => {
-  const routeMap = (await pathExists(designContext.files.routeMap)) ? await readJson(designContext.files.routeMap) : { figmaRoutes: [] };
+  const rawRouteMap = (await pathExists(designContext.files.routeMap)) ? await readJson(designContext.files.routeMap) : {};
+  const routeMap = { ...rawRouteMap, figmaRoutes: rawRouteMap.figmaRoutes ?? rawRouteMap.routes ?? [] };
   const fileNames = (await readdir(designContext.normalizedDir)).filter((fileName) => ROUTE_FILE_PATTERN.test(fileName)).sort();
 
   const routes = await Promise.all(
@@ -22,9 +23,10 @@ export const loadRouteSpecs = async (designContext) => {
       const filePath = path.join(designContext.normalizedDir, fileName);
       const spec = await readJson(filePath);
       const key = fileName.replace(/^route-/, "").replace(/\.json$/, "");
+      const specPath = spec.path ?? spec.route;
       const mapping =
-        routeMap.figmaRoutes.find((item) => item.shopifyPath === spec.path) ??
-        routeMap.figmaRoutes.find((item) => item.template?.endsWith(spec.handle)) ??
+        routeMap.figmaRoutes.find((item) => (item.shopifyPath ?? item.shopify) === specPath) ??
+        routeMap.figmaRoutes.find((item) => item.template?.endsWith(spec.handle ?? "")) ??
         null;
 
       return {
@@ -33,7 +35,7 @@ export const loadRouteSpecs = async (designContext) => {
         key,
         spec,
         mapping,
-        path: spec.path,
+        path: spec.path ?? spec.route,
         template: mapping?.template ?? null,
         templateFamily: mapping?.template?.split(".")[0] ?? null
       };

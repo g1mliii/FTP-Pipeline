@@ -14,8 +14,10 @@ export type CheckId =
   | "claudeSkill"
   | "claudeFigma"
   | "claudePlaywright"
+  | "claudeContextMode"
   | "codexFigmaMcp"
   | "codexPlaywrightMcp"
+  | "codexContextModeMcp"
   | "shopifyAuth";
 
 export type CheckStatus = "idle" | "running" | "installing" | "auth_required" | "ready" | "action_required" | "error";

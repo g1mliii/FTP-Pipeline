@@ -39,9 +39,10 @@ const copyEntry = async (relativePath) => {
 await rm(targetRoot, { recursive: true, force: true });
 await mkdir(targetRoot, { recursive: true });
 
-for (const relativePath of ["AGENTS.md", "README.md", "scripts", "input/designs", "skills"]) {
+for (const relativePath of ["AGENTS.md", "README.md", "scripts", "input/designs", "skills", "tools/context-mode"]) {
   await copyEntry(relativePath);
 }
+await rm(path.join(targetRoot, "tools", "context-mode", "node_modules"), { recursive: true, force: true });
 
 // Patch AGENTS.md to prepend the Key Documents header if not already present
 const agentsPath = path.join(targetRoot, "AGENTS.md");
@@ -57,6 +58,7 @@ if (!agentsContent.startsWith("# Workspace Guide")) {
     "- `tasks/todo.md` — Current work tracking",
     "- `tasks/lessons.md` — Mistakes and corrections log",
     "- `skills/figma-to-shopify-pipeline/SKILL.md` — Full pipeline orchestration skill",
+    "- `tools/context-mode/` — Context Mode MCP server for session continuity, context virtualization, and decision tracking",
     "",
     "---",
     "",
@@ -216,6 +218,8 @@ await writeFile(path.join(targetRoot, "tasks", "todo.md"), [
   "",
   "This file tracks active work using the template from `AGENT.md`.",
   "",
+  "> **Context Mode MCP** is available at `tools/context-mode/`. Use `cm_index`, `cm_search`, and `cm_retrieve` to manage session context, and `cm_track_decision` / `cm_decisions_get` to record key decisions across pipeline runs.",
+  "",
   "---",
   "",
   "## Working Notes",
@@ -301,7 +305,16 @@ const claudeSettings = {
       "mcp__plugin_playwright_playwright__browser_take_screenshot",
       "mcp__plugin_playwright_playwright__browser_fill_form",
       "mcp__plugin_playwright_playwright__browser_click",
-      "mcp__plugin_playwright_playwright__browser_snapshot"
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      // Context Mode MCP
+      "mcp__context-mode__cm_index",
+      "mcp__context-mode__cm_search",
+      "mcp__context-mode__cm_retrieve",
+      "mcp__context-mode__cm_list",
+      "mcp__context-mode__cm_checkpoint_save",
+      "mcp__context-mode__cm_checkpoint_load",
+      "mcp__context-mode__cm_track_decision",
+      "mcp__context-mode__cm_decisions_get"
     ]
   }
 };

@@ -1,7 +1,9 @@
 node_modules/
 output/
+input/designs/
 input/figma/
 *.log
+.claude/settings.local.json
 apps/desktop/out/
 apps/desktop/dist/
 apps/desktop/build/icon.ico

@@ -68,7 +68,7 @@ export interface ParsedClaudeMcpStatus {
   detail: string;
 }
 
-export const parseClaudeMcpStatus = (output: string, serverName: "figma" | "playwright"): ParsedClaudeMcpStatus => {
+export const parseClaudeMcpStatus = (output: string, serverName: string): ParsedClaudeMcpStatus => {
   const lines = output
     .split(/\r?\n/)
     .map((line) => line.trim())
