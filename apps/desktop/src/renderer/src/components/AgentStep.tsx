@@ -32,7 +32,7 @@ export function AgentStep({
     .filter((item) => ["claudeCli", "claudeSkill", "claudePlaywright", "claudeContextMode"].includes(item.id))
     .every((item) => item.status === "ready");
   const codexSetupReady = checks
-    .filter((item) => ["codexCli", "codexFigmaMcp", "codexPlaywrightMcp"].includes(item.id))
+    .filter((item) => ["codexCli", "codexFigmaMcp", "codexPlaywrightMcp", "codexContextModeMcp"].includes(item.id))
     .every((item) => item.status === "ready");
   const claudeAuthReady = checks.find((item) => item.id === "claudeAuth")?.status === "ready";
   const codexAuthReady = checks.find((item) => item.id === "codexAuth")?.status === "ready";

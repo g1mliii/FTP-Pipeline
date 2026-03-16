@@ -4,7 +4,7 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "/Users/subaigsuri/ftp/FTP-Pipeline/tools/context-mode/index.mjs"
+        "C:/Users/subai/Documents/test/tools/context-mode/index.mjs"
       ],
       "env": {}
     }

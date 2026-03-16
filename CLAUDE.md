@@ -28,3 +28,15 @@ Optimize for the desktop wrapper under `apps/desktop/`, not for generated storef
 3. Prioritize business clarity. Labels, status, prerequisites, errors, and outcomes should be written for practical decision-making, not developer theater.
 4. Make progress legible. Users should always understand what is ready, what is blocked, what is running, and what still needs action.
 5. Keep accessibility built in. Maintain strong contrast in dark mode, visible focus states, keyboard-friendly controls, and support reduced-motion preferences by default.
+
+## Context Mode MCP
+
+  The `context-mode` MCP is registered globally. Use it every session:
+
+  | Tool | When |
+  |---|---|
+  | `cm_checkpoint_load` + `cm_decisions_get` | Start of every session |
+  | `cm_index` | Before reading large files or processing bulky output |
+  | `cm_search` | Instead of re-reading indexed files |
+  | `cm_checkpoint_save` | After each major step and before `/compact` |
+  | `cm_track_decision` | Record any failed approach or confirmed fix |

@@ -59,11 +59,16 @@
       "Bash(TOKEN=\"atkn_2.CvQBCiRhZTE1NTMzYy0yMThlLTQ2ZDQtYTNiZi0xOGExZmU5MGEzMjISJGVhYWQxNjNjLWJkNmQtNGM2ZS1iMzU3LTljMDUwZGRlNmU0ZBoCEg0gnPK3zQYo0J7czQYyJGI5Y2YzOWIyLWI5NzktNGZjNy04NTM5LTNiZWRhMGZjMjA5MzokZmJkYjI2NDktZTMyNy00OTA3LThmNjctOTA4ZDI0Y2ZkN2UzQiQyZGM0Mjg5Mi1mYzE0LTRlNDAtYmZhMy04Y2Q3Njg2ZWZjMjZKJGM0ZDE0YWIxLWFjM2QtNGI5Mi04MjQ0LTYzMGRlNTRlZmQyZhJvCkDY6RtlOEMnTeDhSLcZ5jEJR6CWHvIz2raJC3oSrCctlmtxTTLZBTPaZ9xsvEGEOM8iCE5Q0QwpCSXtU8DDS0YDEitXWFI1NjdWUEtaZ050NUw2cjlMaXhaYXJhWnpCRDhqSTY0aVRYWFVtVFU4\"\ncurl -s -X GET \"https://admin.shopify.com/store/cda8qv-8j/api/2024-01/pages.json?limit=5\" \\\\\n  -H \"Authorization: Bearer $TOKEN\" \\\\\n  -H \"Content-Type: application/json\" 2>&1)",
       "Bash(git commit:*)",
       "Bash(cd:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Read(//c/Users/subai/Documents/test/**)",
+      "Read(//c/Users/subai/Documents/test/.claude/**)",
+      "Bash(cat:*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''mcpServers'''',{}\\), indent=2\\)\\)\")",
+      "Bash(claude plugin:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "context-mode"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

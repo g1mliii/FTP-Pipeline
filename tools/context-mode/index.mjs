@@ -41,6 +41,15 @@ db.run(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE VIRTUAL TABLE IF NOT EXISTS content_fts USING fts5(
+    id UNINDEXED,
+    project_id UNINDEXED,
+    label,
+    body,
+    content='content',
+    content_rowid='rowid'
+  );
+
   CREATE TABLE IF NOT EXISTS checkpoints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id TEXT NOT NULL,
@@ -77,6 +86,17 @@ const query = (sql, params = []) => {
 // Helper: run INSERT/UPDATE/DELETE
 const run = (sql, params = []) => {
   db.run(sql, params);
+  persist();
+};
+
+// Insert content and sync FTS5 index
+const insertContent = (id, projectId, label, source, body, bodySize) => {
+  db.run(
+    "INSERT OR REPLACE INTO content (id, project_id, label, source, body, body_size) VALUES (?, ?, ?, ?, ?, ?)",
+    [id, projectId, label, source, body, bodySize]
+  );
+  // Sync FTS5 (content= table requires manual sync)
+  db.run("INSERT INTO content_fts(content_fts) VALUES('rebuild')");
   persist();
 };
 
@@ -214,10 +234,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const id = randomUUID().slice(0, 8);
       const body = String(args.content);
       const bodySize = Buffer.byteLength(body, "utf8");
-      run(
-        "INSERT OR REPLACE INTO content (id, project_id, label, source, body, body_size) VALUES (?, ?, ?, ?, ?, ?)",
-        [id, PROJECT_ID, String(args.label), args.source ? String(args.source) : null, body, bodySize]
-      );
+      insertContent(id, PROJECT_ID, String(args.label), args.source ? String(args.source) : null, body, bodySize);
 
       const lines = body.split("\n").length;
       const tokenEstimate = Math.ceil(bodySize / 4);
@@ -234,36 +251,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (name === "cm_search") {
       const limit = Number(args.limit ?? 5);
-      const terms = String(args.query).toLowerCase().split(/\s+/).filter(Boolean);
-      const rows = query(
-        "SELECT id, label, source, body, body_size, created_at FROM content WHERE project_id = ? ORDER BY created_at DESC LIMIT 100",
-        [PROJECT_ID]
-      );
+      const rawQuery = String(args.query);
 
-      const scored = rows
-        .map((r) => {
-          const haystack = (r.label + " " + r.body).toLowerCase();
-          const hits = terms.filter((t) => haystack.includes(t)).length;
-          return { ...r, hits };
-        })
-        .filter((r) => r.hits > 0)
-        .sort((a, b) => b.hits - a.hits)
-        .slice(0, limit);
+      // Use FTS5 with BM25 ranking, scoped to this project
+      let results;
+      try {
+        results = query(
+          `SELECT c.id, c.label, c.source, c.body, c.body_size,
+                  snippet(content_fts, 3, '>>>', '<<<', '...', 48) AS snippet
+           FROM content_fts
+           JOIN content c ON c.id = content_fts.id
+           WHERE content_fts MATCH ? AND c.project_id = ?
+           ORDER BY rank
+           LIMIT ?`,
+          [rawQuery, PROJECT_ID, limit]
+        );
+      } catch {
+        // FTS5 syntax error — fall back to plain substring match
+        results = query(
+          "SELECT id, label, source, body, body_size, '' AS snippet FROM content WHERE project_id = ? AND (label LIKE ? OR body LIKE ?) LIMIT ?",
+          [PROJECT_ID, `%${rawQuery}%`, `%${rawQuery}%`, limit]
+        );
+      }
 
-      if (!scored.length) {
+      if (!results.length) {
         return { content: [{ type: "text", text: "No indexed content matched that query." }] };
       }
 
-      const text = scored
-        .map((r) => {
-          // Extract a snippet around the first matching term
-          const body = r.body.toLowerCase();
-          const firstTerm = terms.find((t) => body.includes(t));
-          const idx = firstTerm ? body.indexOf(firstTerm) : 0;
-          const start = Math.max(0, idx - 80);
-          const snippet = r.body.slice(start, start + 200).replace(/\n/g, " ").trim();
-          return `[${r.id}] ${r.label}${r.source ? ` (${r.source})` : ""} — ${(r.body_size / 1024).toFixed(1)}KB\n  ...${snippet}...`;
-        })
+      const text = results
+        .map((r) => `[${r.id}] ${r.label}${r.source ? ` (${r.source})` : ""} — ${(r.body_size / 1024).toFixed(1)}KB\n  ...${r.snippet || r.body.slice(0, 200)}...`)
         .join("\n\n");
 
       return { content: [{ type: "text", text }] };
