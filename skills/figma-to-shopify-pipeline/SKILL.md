@@ -17,6 +17,23 @@ description: >
 
 # Figma to Shopify Theme Pipeline
 
+## Context Mode MCP — Use These Tools Every Session
+
+The `context-mode` MCP is registered in this workspace. Use it to keep context lean and sessions continuous:
+
+| Tool | When to use |
+|---|---|
+| `cm_index` | Before reading any large file or processing bulky output — store it, get a compact token back |
+| `cm_search` | Instead of re-reading indexed files — search for the specific part you need |
+| `cm_checkpoint_save` | After each major step and before `/compact` — saves task state, active files, notes |
+| `cm_checkpoint_load` | At session start or immediately after `/compact` — restores full context |
+| `cm_track_decision` | Record any failed approach, confirmed fix, or key decision so it isn't repeated |
+| `cm_decisions_get` | At session start — review past decisions before writing any code |
+
+**Call `cm_checkpoint_load` and `cm_decisions_get` at the very start of every pipeline session.**
+
+---
+
 ## Overview
 
 Convert the **full routed experience** from a Figma source into a Shopify theme that:

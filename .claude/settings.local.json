@@ -61,5 +61,9 @@
       "Bash(cd:*)",
       "Bash(git pull:*)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "context-mode"
+  ],
+  "enableAllProjectMcpServers": true
 }
