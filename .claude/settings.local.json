@@ -64,7 +64,13 @@
       "Read(//c/Users/subai/Documents/test/.claude/**)",
       "Bash(cat:*)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''mcpServers'''',{}\\), indent=2\\)\\)\")",
-      "Bash(claude plugin:*)"
+      "Bash(claude plugin:*)",
+      "mcp__context-mode-ext__ctx_doctor",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

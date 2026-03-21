@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -307,11 +307,20 @@ export class SetupService {
   readonly workspaceRoot = findWorkspaceRoot();
   readonly secretStore = new SecretStore();
 
-  private async resolveClaudeSkillSource() {
-    return findExistingPath([
-      path.join(this.workspaceRoot, "skills", "figma-to-shopify-pipeline", "SKILL.md"),
-      path.join(this.workspaceRoot, "figma-to-shopify-pipeline", "SKILL.md")
-    ]).then((skillFile) => (skillFile ? path.dirname(skillFile) : null));
+  /**
+   * Returns the root directory containing skill subdirectories, or null if not found.
+   * Primary: workspace/skills/ (multi-skill layout)
+   * Fallback: workspace/figma-to-shopify-pipeline/ (single-skill legacy layout)
+   */
+  private async resolveClaudeSkillsRoot(): Promise<{ type: "multi"; root: string } | { type: "single"; dir: string } | null> {
+    const skillsDir = path.join(this.workspaceRoot, "skills");
+    const orchestrator = path.join(skillsDir, "figma-to-shopify-pipeline", "SKILL.md");
+    if (await fileExists(orchestrator)) return { type: "multi", root: skillsDir };
+
+    const rootSkill = path.join(this.workspaceRoot, "figma-to-shopify-pipeline", "SKILL.md");
+    if (await fileExists(rootSkill)) return { type: "single", dir: path.join(this.workspaceRoot, "figma-to-shopify-pipeline") };
+
+    return null;
   }
 
   private createIdleSnapshot(inputs: SetupInputState, secretStatuses: SetupSnapshot["secretStatuses"]): SetupSnapshot {
@@ -693,8 +702,8 @@ export class SetupService {
     await this.backupConfigs();
     const userPaths = getUserPaths();
     await mkdir(userPaths.claudeSkills, { recursive: true, mode: 0o700 });
-    const skillSource = await this.resolveClaudeSkillSource();
-    if (!skillSource) {
+    const skillsSource = await this.resolveClaudeSkillsRoot();
+    if (!skillsSource) {
       return {
         ok: false,
         message: "The repo skill source could not be found in the workspace.",
@@ -702,9 +711,23 @@ export class SetupService {
       };
     }
 
-    const targetSkillDir = path.join(userPaths.claudeSkills, "figma-to-shopify-pipeline");
-    await rm(targetSkillDir, { recursive: true, force: true });
-    await ensureDirectoryCopy(skillSource, targetSkillDir);
+    // Install all skill directories found in the workspace
+    if (skillsSource.type === "multi") {
+      const entries = await readdir(skillsSource.root, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const skillMd = path.join(skillsSource.root, entry.name, "SKILL.md");
+        if (!(await fileExists(skillMd))) continue;
+        const target = path.join(userPaths.claudeSkills, entry.name);
+        await rm(target, { recursive: true, force: true });
+        await ensureDirectoryCopy(path.join(skillsSource.root, entry.name), target);
+      }
+    } else {
+      // Legacy single-skill fallback
+      const targetSkillDir = path.join(userPaths.claudeSkills, "figma-to-shopify-pipeline");
+      await rm(targetSkillDir, { recursive: true, force: true });
+      await ensureDirectoryCopy(skillsSource.dir, targetSkillDir);
+    }
 
     const figmaInstall = await runCommand("claude", ["plugin", "install", "figma@claude-plugins-official"], { cwd: this.workspaceRoot });
     if (!figmaInstall.ok && !figmaInstall.stdout.includes("already installed")) {

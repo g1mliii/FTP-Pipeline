@@ -101,7 +101,7 @@ export const suggestDesignSlug = (rawUrl: string, fallbackStoreDomain = "") => {
   return "";
 };
 
-export const buildClaudePrompt = ({ figmaUrl, storeDomain, designSlug }: BuildInput) => `Use the repo's AGENTS.md and the installed figma-to-shopify-pipeline Claude skill as the workflow source of truth.
+export const buildClaudePrompt = ({ figmaUrl, storeDomain, designSlug }: BuildInput) => `Use the repo's AGENTS.md and the installed figma-to-shopify-pipeline Claude skill as the workflow orchestrator. It invokes phase sub-skills in sequence: /fts-normalize, /fts-generate, /fts-preview-test, /fts-validate, /fts-push-test.
 
 Execute the full Figma-to-Shopify pipeline for this Figma file: ${figmaUrl}
 

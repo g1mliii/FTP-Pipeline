@@ -1,12 +1,9 @@
 ---
 name: figma-to-shopify-pipeline
 description: >
-  Run the full route-aware Figma-to-Shopify theme pipeline. Normalizes Figma
-  design source into compact JSON, generates fully functional Shopify
-  sections/snippets/templates/assets, builds local multi-route previews,
-  runs Playwright smoke tests, validates with Shopify CLI, and pushes to a
-  stable preview theme. Always ends with an explicit Shopify resource checklist
-  for any remaining backend content.
+  Run the full route-aware Figma-to-Shopify theme pipeline. Orchestrates
+  five phase skills in sequence: normalize, generate, preview/test, validate,
+  and push/test. Always ends with an explicit Shopify resource checklist.
 
   Use this skill whenever the user wants to convert a Figma design into a Shopify
   theme, run the figma-to-shopify pipeline, generate Shopify Liquid from Figma
@@ -15,22 +12,46 @@ description: >
   automation work -- even if they don't call it a "pipeline" or use those exact words.
 ---
 
-# Figma to Shopify Theme Pipeline
+# Figma to Shopify Theme Pipeline — Orchestrator
 
-## Context Mode MCP — Use These Tools Every Session
+This skill orchestrates five phase skills in sequence. Each phase is a separate skill with focused instructions. Invoke each phase skill when you reach it — do not try to hold all phase instructions at once.
 
-The `context-mode` MCP is registered in this workspace. Use it to keep context lean and sessions continuous:
+## Session Initialization (MANDATORY)
 
-| Tool | When to use |
-|---|---|
-| `cm_index` | Before reading any large file or processing bulky output — store it, get a compact token back |
-| `cm_search` | Instead of re-reading indexed files — search for the specific part you need |
-| `cm_checkpoint_save` | After each major step and before `/compact` — saves task state, active files, notes |
-| `cm_checkpoint_load` | At session start or immediately after `/compact` — restores full context |
-| `cm_track_decision` | Record any failed approach, confirmed fix, or key decision so it isn't repeated |
-| `cm_decisions_get` | At session start — review past decisions before writing any code |
+Before writing any code:
+1. Call `cm_checkpoint_load` and `cm_decisions_get` to restore prior state
+2. Read `tasks/lessons.md` for known failure patterns
+3. Read `references/shared-rules.md` for quality gates, route coverage, and directory conventions
+4. Write a run-specific checklist to `tasks/todo.md` (see template below)
 
-**Call `cm_checkpoint_load` and `cm_decisions_get` at the very start of every pipeline session.**
+---
+
+## Phase Sequence
+
+Execute phases in order. Do not skip phases or run them in parallel.
+
+| # | Phase | Skill to invoke | Entry Gate | Exit Gate |
+|---|---|---|---|---|
+| 1 | Normalize | `/fts-normalize` | Figma source accessible, DESIGN_SLUG set | All route files + route map in normalized/ |
+| 2 | Generate | `/fts-generate` | Normalization complete, all route files present | All theme files generated, audit passes |
+| 3 | Preview & Test | `/fts-preview-test` | Theme generation complete | Playwright screenshots for all routes |
+| 4 | Validate | `/fts-validate` | Preview tests pass | `shopify theme check` passes |
+| 5 | Push & Test | `/fts-push-test` | Validation passes | Live on preview, resource checklist at end |
+
+### Between-Phase Protocol
+
+After completing each phase:
+1. `cm_checkpoint_save` — record phase number, status, and notes
+2. `cm_track_decision` — record any failures or key decisions made
+3. Update `tasks/todo.md` — check off completed items
+4. Verify the exit gate before invoking the next phase skill
+
+### After `/compact` Recovery
+
+If context is compressed mid-run:
+1. `cm_checkpoint_load` — determine which phase you were on
+2. Read `references/shared-rules.md` — restore quality gates
+3. Invoke only the current phase skill — don't re-read completed phases
 
 ---
 
@@ -44,310 +65,15 @@ Convert the **full routed experience** from a Figma source into a Shopify theme 
 - preserves the Figma design language as faithfully as Shopify allows
 - leaves only Shopify store-content creation as the remaining manual step
 
-This pipeline is **design-agnostic**. It should work for any Figma file regardless of layout style, section count, or visual complexity. There are no fixed starter templates or hardcoded section types — every run generates fresh theme files from the normalized design source.
+This pipeline is **design-agnostic**. No fixed starter templates or hardcoded section types.
 
 Preferred sub-skill order: `figma` then `shopify-liquid-themes` then design helper skills as needed then `playwright`
 
 ---
 
-## Functional Liquid: The Non-Negotiable Quality Bar
-
-Every generated Shopify Liquid component must be production-grade before it is considered done. This means:
-
-- **Valid Liquid syntax** that Shopify can parse and render without errors
-- **Valid schema** with correct setting types, proper `id` and `type` fields, and working defaults
-- **Correct asset references** — CSS in `assets/`, images via `image_picker`, no broken paths
-- **Working merchant-editable settings** — text, richtext, url, image_picker settings that actually render their values in the Liquid output
-- **Working blocks** when repetition is required — with `block_order` in JSON templates, not just section presets
-- **No preview-only shortcuts** — if it renders in the local preview but would break in a real Shopify theme, it is not done
-- **Preserved visual intent** — layout, spacing, typography, color, imagery treatment, shape language, corner radius, borders, and motion style from the Figma source should survive the adaptation
-
-A component that looks right in preview but has dead schema, fake settings, missing blocks, or hardcoded demo content is incomplete. Finish it before moving on.
-
----
-
-## CRITICAL: Route Coverage Rule
-
-**Never stop at the homepage.** If the Figma source includes additional pages or routes,
-they are required output in the same pass.
-
-Required steps every time:
-1. Inspect the Figma route map first
-2. Convert homepage sections
-3. Convert every routed page/destination
-4. Generate matching Shopify templates and sections
-5. Test homepage navigation AND destination routes with Playwright
-6. Keep going until the full theme-side route map is covered
-
-Common route mappings:
-
-| Figma route | Shopify route |
-|---|---|
-| /product/<handle> | /products/<handle> |
-| /about | /pages/about |
-| /collection/<handle> | /collections/<handle> |
-| /campaign/<handle> | /pages/<handle> or the best-fitting alternate template family |
-
-If a Figma route is not directly compatible with Shopify routing, map it to a
-Shopify-supported route and record the mapping explicitly.
-
----
-
-## Directory Conventions
-
-Each design gets its own slug. Never share input/normalized/ or output/theme/ across unrelated projects.
-
-    input/designs/<design-slug>/normalized/   <- tracked source (check into git)
-      home.json                               <- homepage sections
-      site-shell.json                         <- shared header/footer
-      route-about.json
-      route-featured-product.json
-      route-summer-campaign.json
-      route-<whatever-the-design-needs>.json
-
-    input/figma/<design-slug>/                <- raw Figma API output (gitignored)
-
-    output/<design-slug>/
-      theme/                                  <- generated Shopify theme (gitignored)
-      preview/                                <- local HTML previews (gitignored)
-      playwright/                             <- screenshots and test artifacts (gitignored)
-
-There is no required fixed schema beyond keeping normalized inputs explicit and per-design.
-If a new design uses different page types, section patterns, or data shapes, create normalized files that fit that design.
-
----
-
-## Workflow
-
-### 1. Normalize the Design
-
-From a real Figma file (with FIGMA_TOKEN):
-
-    npm run fetch:figma -- <figma-file-key>
-
-Raw output lands under input/figma/<design-slug>/.
-
-Never convert raw Figma JSON directly into Liquid. Always normalize first:
-- Extract homepage sections into input/designs/<design-slug>/normalized/home.json
-- Extract shared shell into site-shell.json
-- Extract each routed page into route-<name>.json
-- Keep normalized files small and explicit; one file per major route or shell concern
-
-For Figma Make files: prefer get_design_context + read_mcp_resource over screenshots.
-Do not rely on get_metadata or get_screenshot as primary extraction sources.
-Screenshots are optional QA artifacts only.
-
-For Figma Make files with source code resources:
-- Treat the Make source files as the authoritative content source for copy, route structure, component names, and imagery references
-- Start with the app entry and route-bearing files first, then read only the specific component/style files needed to normalize the design
-- Use the MCP server name exactly as exposed by the tool instead of inventing aliases
-- Do not rewrite marketing copy, prices, testimonials, FAQs, nav labels, or product details unless the source itself clearly contains different values
-- If a value is missing or ambiguous, mark it explicitly in normalization instead of inventing plausible filler
-
-### 2. Generate the Shopify Theme
-
-Generate the full Shopify theme directly from the normalized input. There is no single fixed generation command — the implementation is authored per-design based on the normalized source.
-
-Expected output structure under `output/<design-slug>/theme/`:
-- `sections/*.liquid` — major editable UI modules
-- `snippets/*.liquid` — small reusable partials
-- `templates/*.json` — page composition (JSON templates with blocks and block_order)
-- `assets/*.css` — shared CSS
-
-The repo provides generic helpers, not a universal theme generator:
-- `scripts/fetch-figma-file.mjs` — Figma API fetch
-- `scripts/serve-preview.mjs` — serve local preview files
-- `scripts/validate-shopify.mjs` — Shopify CLI availability check
-- `scripts/push-preview-theme.mjs` — push to stable preview theme
-- `scripts/test-shopify-preview.mjs` — Playwright against live Shopify preview
-- `scripts/lib/design-context.mjs` — per-design path resolver
-- `scripts/lib/route-specs.mjs` — route-aware input loader
-
-Use these helpers when they fit. If they do not match the current design, generate the needed theme files, preview output, or verification steps directly. Do not force a design into an older implementation pattern.
-
-Generation discipline:
-- Finish normalization first, then generate theme files from that normalized source
-- Re-read the normalized files before theme generation so section data and route mappings stay aligned
-- Prefer one coordinated implementation pass over many parallel sub-agents when authoring theme files; fragmented generation tends to invent mismatched schema, content, and asset references
-- Do not create phantom asset tags, placeholder snippet includes, or CSS file references that are not also created in the theme output
-- After generation, audit the produced theme for orphaned asset references, meaningless Liquid output, invalid template block wiring, and invented content that is not grounded in the normalized source
-
-### 3. Build Local Previews and Test with Playwright
-
-Local preview plus Playwright is the **primary verification loop** and should be used before any Shopify push. This matters because it is the fastest way to catch drift from the Figma source and iterate on corrections.
-
-- Generate preview HTML for homepage and all routed destinations under `output/<design-slug>/preview/`
-- Serve with `npm run preview` only after confirming the preview files exist
-- Ensure the shell has the active design context before running repo preview scripts:
-  - PowerShell: `$env:DESIGN_SLUG="<design-slug>"`
-  - or pass the slug explicitly to the script entrypoint if you are not relying on environment context
-- Use Playwright to screenshot each route and compare against the Figma source
-- Use the UI/design helper skills (see below) to refine any visual drift found during browser-based comparison
-
-Preview execution discipline:
-- Do not background a vague "preview build agent" and then wait indefinitely for it to maybe write files
-- Build the preview deterministically in the current workspace, then verify that `output/<design-slug>/preview/index.html` exists before serving it
-- If the preview file does not exist, stop and fix preview generation instead of waiting in a loop
-- If Playwright is ready but preview output is missing, that is a generation failure, not a reason to stall
-
-Playwright is not optional QA — it is the primary feedback mechanism for iterating on output quality. Use it to verify layout, spacing, typography, color, and interaction fidelity before moving to Shopify.
-
-### 4. Validate with Shopify CLI
-
-    $env:SHOPIFY_STORE="your-store.myshopify.com"
-    $env:SHOPIFY_PREVIEW_THEME_ID="1234567890"
-    npm run validate:shopify
-    shopify theme check --path output/$env:DESIGN_SLUG/theme
-
-Trigger auth if needed: shopify theme list --store $env:SHOPIFY_STORE --json
-
-Environment verification discipline:
-- Before claiming that `DESIGN_SLUG`, `SHOPIFY_STORE`, `SHOPIFY_PREVIEW_THEME_ID`, or `SHOPIFY_STOREFRONT_PASSWORD` is missing, verify it from the live shell session that will run the command
-- In PowerShell, check with commands such as:
-  - `echo $env:DESIGN_SLUG`
-  - `echo $env:SHOPIFY_STORE`
-  - `echo $env:SHOPIFY_PREVIEW_THEME_ID`
-  - `echo $env:SHOPIFY_STOREFRONT_PASSWORD`
-- If a value exists in the shell, do not ask the user for it again
-- If a value is missing from the shell but expected from the desktop wrapper, report that as an environment handoff problem instead of assuming the user never provided it
-
-### 5. Push and Test the Preview Theme
-
-    npm run push:preview         # pushes to the stable unpublished preview theme
-    npm run test:shopify-preview # Playwright against the live Shopify preview URL
-
-Operational rules:
-- Avoid shopify theme push --unpublished in automation — it may prompt for a theme name
-- Use shopify theme share once to create a preview theme, then reuse that same theme ID every run
-- Keep SHOPIFY_STOREFRONT_PASSWORD set if the storefront is password-protected
-- A favicon.ico 404 is non-blocking noise
-- Prefer the repo script for live preview verification. Do not replace `npm run test:shopify-preview` with ad hoc Playwright code unless the script itself is broken and you state that explicitly.
-
----
-
-## UI/Design Helper Skills
-
-The Impeccable skill suite provides specialized design refinement tools. Use them during conversion and especially after browser-based comparison with the Figma source reveals visual drift. These skills help produce output that looks like it was crafted by a designer, not generated by a template.
-
-**When to reach for them:**
-- After generating Liquid and building the local preview, compare the rendered output to the Figma source in a browser
-- When the comparison reveals layout, spacing, typography, color, or interaction drift
-- When responsiveness, accessibility, or edge-case resilience needs strengthening
-- When the output passes technically but feels generic or visually flat compared to the Figma source
-
-**Available skills and when they help:**
-
-| Skill | Use when... |
-|---|---|
-| `frontend-design` | The generated UI needs stronger aesthetic direction or feels like generic AI output |
-| `polish` | Final quality pass — alignment, spacing, typography, interaction states, consistency |
-| `adapt` | Responsive adaptation across screen sizes, devices, or contexts |
-| `harden` | Edge cases, error states, i18n resilience, extreme inputs |
-| `audit` | Systematic quality check across accessibility, performance, theming, responsiveness |
-| `critique` | Critical design review and targeted feedback |
-| `normalize` | Standardize inconsistent patterns across generated sections |
-| `colorize` | Color system refinement when the palette drifts from the Figma source |
-| `bolder` | Strengthen visual impact when output feels too tame |
-| `quieter` | Tone down visual noise when output feels too busy |
-| `animate` | Motion and interaction polish |
-| `delight` | Add personality and craft touches |
-| `clarify` | Clarify confusing layout or information hierarchy |
-| `distill` | Simplify overly complex sections |
-| `extract` | Consolidate repeated patterns into reusable components |
-| `optimize` | Performance and usability optimization |
-| `onboard` | Improve first-use or onboarding flows in the design |
-
-**Important constraint:** These skills improve the UI, but the output must still land as valid Shopify theme code. Do not let design refinement drift into generic website-only output that breaks Shopify theme constraints.
-
----
-
 ## Figma MCP as a Reference Source
 
-The Figma MCP tools (`get_design_context`, `get_screenshot`, etc.) are useful for upstream inspection, source extraction, and understanding how a design would behave as a regular website. This web-oriented interpretation can inform layout decisions, responsive behavior, interaction patterns, and content structure.
-
-Use the Figma MCP tools when:
-- Inspecting design structure, tokens, variables, and component hierarchies
-- Understanding responsive intent or interaction patterns from the source
-- Extracting content, images, and style values during normalization
-- Getting a web-oriented mental model of the design before translating to Shopify
-
-The Figma MCP interpretation is reference material. The final implementation must be re-expressed in Shopify primitives, schema, route families, and theme files.
-
----
-
-## Shopify Theme Structure Rules
-
-| Where | What goes there |
-|---|---|
-| sections/ | Major editable UI modules |
-| snippets/ | Small reusable partials |
-| templates/ | Page composition (JSON templates) |
-| assets/ | Shared CSS/JS files |
-
-- Use schema settings for merchant-editable text, links, images, and options
-- Use blocks when a merchant needs repeatable items inside a section
-- Block-based JSON templates must include blocks and block_order
-  (section presets alone do not populate the live homepage)
-- Standard route template families: templates/product*.json, templates/collection*.json, templates/page*.json
-- Use alternate templates for special product/collection/page destinations
-- Theme files do not create Shopify store resources — that is a separate task
-
-## Figma to Shopify Element Mapping
-
-| Figma element | Shopify primitive |
-|---|---|
-| Heading / label / short text | text setting |
-| Rich body copy | richtext setting |
-| Link / CTA | url setting |
-| Merchant-replaceable image | image_picker setting |
-| Repeated cards / testimonials | section blocks |
-| Shared controls / partials | snippets |
-| Page assembly | JSON template |
-
----
-
-## Store Content Seeding (Separate Layer)
-
-Theme generation creates route layouts. It does NOT create Shopify products, collections, or pages.
-
-When live routes still depend on missing backend resources, the final response MUST include a
-route-by-route **Missing Shopify Resource Checklist**. For each missing route, list:
-
-- Figma route or intended storefront route
-- Shopify resource type: `product`, `collection`, or `page`
-- Required handle
-- Suggested admin title/name
-- Template to assign
-- Whether it must be published / available to Online Store
-- Current status: `required`, `blocked by missing resource`, or similar explicit wording
-
-Checklist format example:
-
-    Missing Shopify Resource Checklist
-    - Route: /products/featured-item
-      Type: product
-      Handle: featured-item
-      Suggested title: Featured Item
-      Template: product.featured-item
-      Publish to Online Store: yes
-      Status: required for route to render correctly
-
-    - Route: /pages/about
-      Type: page
-      Handle: about
-      Suggested title: About
-      Template: page.about
-      Publish to Online Store: yes
-      Status: required for route to render correctly
-
-Do not leave this implied. Even if the user knows Shopify well,
-a 404 is not a self-explanatory completion checklist.
-
-Closeout formatting rule:
-- Put the missing-resource checklist at the very end of the final response, after any fix summaries, verification notes, Shopify push results, or preview URLs
-- If additional fixes are made later in the same run, repeat the refreshed checklist at the end instead of leaving the only checklist buried earlier in the conversation
-- Prefer a compact table when the client supports it, otherwise use a flat route-by-route list
-- Do not end with a generic success statement after the checklist; the checklist should be the last substantial section when resources are still missing
+The Figma MCP tools (`get_design_context`, `get_screenshot`, etc.) are useful for upstream inspection and extraction. Use them for inspecting design structure, understanding responsive intent, and extracting content during normalization. The final implementation must be re-expressed in Shopify primitives.
 
 ---
 
@@ -364,25 +90,53 @@ With live Shopify:
 
 ---
 
-## Editing and Maintenance Rules
+## Run Checklist Template (for tasks/todo.md)
 
-- Generate files under output/<design-slug>/theme/ first — move to production only after validation
-- Never declare the flow complete if Figma includes routes beyond the homepage
-- Do not force arbitrary Figma files into older section types, CSS class names, or route handles — build the Shopify theme files the current design actually needs
-- When the workflow changes, update README.md, AGENTS.md, and local skill docs in the same pass
-- Always include the route-by-route Missing Shopify Resource Checklist at closeout when any live routes depend on content not yet in the store
+```
+## Pipeline Run: <design-slug> - <date>
+
+### Phase 1: Normalize (/fts-normalize)
+- [ ] Route map inspected
+- [ ] Homepage normalized
+- [ ] All routes normalized
+- [ ] Site shell normalized
+- [ ] cm_checkpoint_save
+
+### Phase 2: Generate Theme (/fts-generate)
+- [ ] Sections generated for all routes
+- [ ] Snippets + templates with blocks/block_order
+- [ ] Assets generated
+- [ ] Audit: no phantom refs, no invented content
+- [ ] cm_checkpoint_save
+
+### Phase 3: Preview & Test (/fts-preview-test)
+- [ ] Preview HTML for all routes
+- [ ] Playwright screenshots taken
+- [ ] Visual drift addressed
+- [ ] cm_checkpoint_save
+
+### Phase 4: Shopify Validation (/fts-validate)
+- [ ] shopify theme check passes
+- [ ] cm_checkpoint_save
+
+### Phase 5: Push & Test (/fts-push-test)
+- [ ] Preview theme pushed
+- [ ] Playwright against live preview
+- [ ] Missing resource checklist at end
+- [ ] cm_checkpoint_save
+
+### Completion Gates
+- [ ] All Figma routes covered
+- [ ] All sections have working schema
+- [ ] No hardcoded merchant content
+- [ ] Resource checklist is final section
+```
 
 ---
 
 ## Pipeline Improvement Log
 
-Use this section to record general lessons learned from pipeline runs. These should be design-agnostic patterns that improve future conversions, not site-specific fixes.
-
-**How to use this log:**
-- After a pipeline run encounters an error, visual drift, or unexpected behavior, record the pattern here
-- Focus on the general lesson, not the specific design or section name
-- Include what went wrong, why, and what the fix or prevention strategy is
-- Review this log at the start of each pipeline run to avoid repeating known mistakes
+Record general lessons from pipeline runs here. Review at the start of each run.
 
 ### Lessons
 
